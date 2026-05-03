@@ -1,0 +1,55 @@
+FROM node:24-slim AS base
+
+# 1. base: pnpm ランタイムの共通設定
+# PNPM_HOME を設定すると pnpm の store が /pnpm/store に置かれる
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+
+# corepack: package.json の packageManager に従って pnpm を呼び出せるようにする
+RUN corepack enable
+
+WORKDIR /app
+
+
+# 2. fetch: lockfile だけから store にパッケージを取得する層
+# package.json の変更ではこの層のキャッシュは無効化されない=ネット越しの取得を再実行しない
+FROM base AS fetch
+
+COPY pnpm-lock.yaml ./
+# --mount=type=cache: BuildKit の build 間で永続化されるキャッシュ。/pnpm/store を共有して再DL回避
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm fetch
+
+
+# 3. deps: store の中身から node_modules を構築する層 (api/web の共通親)
+FROM fetch AS deps
+
+# pnpm install は workspace 全体の manifest が揃っている必要があるので両 package を COPY
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages/api/package.json ./packages/api/
+COPY packages/web/package.json ./packages/web/
+
+# --offline: ネット禁止。store に無ければエラー (fetch 層の取りこぼしが即顕在化する)
+# --frozen-lockfile: lockfile の自動書換禁止。manifest とズレていればエラー
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --offline
+
+
+# 4. api: Hono dev server
+FROM deps AS api
+
+# image 単体でも起動できるようソースを焼き込む。dev では compose の bind mount で上書きされる
+COPY ./packages/api ./packages/api
+
+WORKDIR /app/packages/api
+EXPOSE 3001
+CMD ["pnpm", "dev"]
+
+
+# 5. web: Next.js dev server
+FROM deps AS web
+
+# image 単体でも起動できるようソースを焼き込む。dev では compose の bind mount で上書きされる
+COPY ./packages/web ./packages/web
+
+WORKDIR /app/packages/web
+EXPOSE 3000
+CMD ["pnpm", "dev"]

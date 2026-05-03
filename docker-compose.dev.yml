@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:18.1
+    environment:
+      POSTGRES_USER: vuln
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vuln_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vuln -d vuln_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: api
+    environment:
+      DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
+      CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（chokidirにファイル変更がないかポーリングさせる）
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/api:/app/packages/api
+      - api_node_modules:/app/packages/api/node_modules
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/').then(res => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/web:/app/packages/web
+      - web_node_modules:/app/packages/web/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  api_node_modules:
+  web_node_modules:
