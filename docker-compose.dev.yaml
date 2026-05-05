@@ -20,6 +20,8 @@ services:
       context: .
       dockerfile: Dockerfile.dev
       target: workspace
+    environment:
+      CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（vitestがchokidirでファイル変更がないかポーリングさせる）
     volumes:
       - ./:/root
     healthcheck:
@@ -36,7 +38,7 @@ services:
       target: api
     environment:
       DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
-      CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（chokidirにファイル変更がないかポーリングさせる）
+      CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（tsxがchokidirにファイル変更がないかポーリングさせる）
     ports:
       - "3001:3001"
     volumes:
