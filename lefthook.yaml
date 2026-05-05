@@ -3,3 +3,8 @@ pre-commit:
     check:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: docker compose -f docker-compose.dev.yaml exec -T workspace pnpm run check {staged_files}
+
+pre-push:
+  commands:
+    test:
+      run: docker compose -f docker-compose.dev.yaml exec -T pnpm run test
