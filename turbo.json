@@ -6,15 +6,18 @@
 			"dependsOn": ["^build"],
 			"outputs": [".next/**", "!.next/cache/**", "dist/**"]
 		},
-		"lint": {},
-		"format": {
-			"outputs": []
-		},
 		"dev": {
 			"cache": false,
 			"persistent": true
 		},
-		"clean": {
+		"check": {
+			"inputs": [
+				"src/**/*.{ts,tsx,js,jsx,mjs,json}",
+				"biome.jsonc",
+				"package.json"
+			]
+		},
+		"check:fix": {
 			"cache": false
 		}
 	}
