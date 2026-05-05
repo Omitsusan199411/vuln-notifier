@@ -42,6 +42,34 @@ docker compose -f docker-compose.dev.yaml exec workspace pnpm check
 docker compose -f docker-compose.dev.yaml exec workspace pnpm check:fix
 ```
 
+### テスト（Vitest）
+
+Vitest ワークスペース構成で api・web 両パッケージのテストを管理しています。テストランナーはルートにのみインストールされており、`pnpm test` 一つで全パッケージのテストが走ります。
+
+```bash
+# 全パッケージのテストを実行
+docker compose -f docker-compose.dev.yaml exec workspace pnpm test
+
+# api のみ
+docker compose -f docker-compose.dev.yaml exec workspace pnpm exec vitest run --project api
+
+# web のみ
+docker compose -f docker-compose.dev.yaml exec workspace pnpm exec vitest run --project web
+
+# ファイル変更を監視して自動再実行（開発中）
+docker compose -f docker-compose.dev.yaml exec workspace pnpm test:watch
+
+# カバレッジ計測（packages/*/coverage/index.html に出力）
+docker compose -f docker-compose.dev.yaml exec workspace pnpm test:coverage
+```
+
+テストファイルは各パッケージの `src/tests/` 以下に配置します。
+
+| パッケージ | 環境 | テストファイルの場所 |
+|---|---|---|
+| `api` | Node | `packages/api/src/tests/**/*.test.ts` |
+| `web` | jsdom | `packages/web/src/tests/**/*.test.{ts,tsx}` |
+
 ### pre-commit フック（Lefthook）
 
 `lefthook install` を実行すると `.git/hooks/pre-commit` が配置され、`git commit` 時に staged ファイルに対して自動で Biome の検査が走ります。
