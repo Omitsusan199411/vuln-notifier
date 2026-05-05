@@ -35,17 +35,11 @@ docker compose -f docker-compose.dev.yaml exec workspace pnpm add --filter web <
 ### Lint / Format（Biome）
 
 ```bash
-# ルート全体に対して Lint と Format を実行
+# api、webともに Lint と Format を実行
 docker compose -f docker-compose.dev.yaml exec workspace pnpm check
 
-# ルート全体に対して Lint と Format を実行（自動修正）
+# 全api、webともに Lint と Format を実行（自動修正）
 docker compose -f docker-compose.dev.yaml exec workspace pnpm check:fix
-
-# api/web パッケージに対して Lint と Format を実行（turbo 経由）
-docker compose -f docker-compose.dev.yaml exec workspace pnpm check:turbo
-
-# api/web パッケージに対して Lint と Format を実行（自動修正・turbo 経由）
-docker compose -f docker-compose.dev.yaml exec workspace pnpm check:turbo:fix
 ```
 
 ### pre-commit フック（Lefthook）
