@@ -2,4 +2,4 @@ pre-commit:
   commands:
     check:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: docker compose -f docker-compose.dev.yaml exec -T workspace pnpm exec biome check {staged_files}
+      run: docker compose -f docker-compose.dev.yaml exec -T workspace pnpm run check {staged_files}
