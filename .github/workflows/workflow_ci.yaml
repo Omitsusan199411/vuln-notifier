@@ -63,7 +63,7 @@ jobs:
         run: pnpm test:coverage
       - name: Get Current Date
         id: current-date
-        run: echo "date=$(date + "%Y%m%d")" >> $GITHUB_OUTPUT
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
       - name: Tar Report
         run: tar -czf coverage-report-${{ steps.current-date.outputs.date }}.tar.gz coverage/
       - name: Coverage Report Upload
