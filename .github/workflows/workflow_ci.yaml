@@ -59,7 +59,14 @@ jobs:
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup
       - name: Start Test
-        run: pnpm test
+        run: pnpm test:coverage
+      - name: Coverage Report Upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: coverage-report # 成果物名
+          path: | # アップロードするファイルパス
+            coverage/
+          retention-days: 7
 
   build:
     name: Build
@@ -76,5 +83,3 @@ jobs:
         uses: ./.github/actions/setup
       - name: Start Build
         run: pnpm build
-        
-          
