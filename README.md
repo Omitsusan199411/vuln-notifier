@@ -70,13 +70,24 @@ docker compose -f docker-compose.dev.yaml exec workspace pnpm test:coverage
 | `api` | Node | `packages/api/src/tests/**/*.test.ts` |
 | `web` | jsdom | `packages/web/src/tests/**/*.test.{ts,tsx}` |
 
-### pre-commit フック（Lefthook）
+### Git フック（Lefthook）
 
-`lefthook install` を実行すると `.git/hooks/pre-commit` が配置され、`git commit` 時に staged ファイルに対して自動で Biome の検査が走ります。
+`lefthook install` を実行すると `.git/hooks/` 以下にフックが配置されます。
 
 ```bash
 # ホストで一度だけ実行（初回セットアップ）
 lefthook install
 ```
 
-検査対象は `*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}` に一致する staged ファイルのみです。エラーがある場合はコミットが中断されます。自動修正は行いません。
+#### pre-commit
+
+`git commit` 時に staged ファイルに対して自動で Biome の検査が走ります。検査対象は `*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}` に一致するファイルのみです。エラーがある場合はコミットが中断されます。自動修正は行いません。
+
+#### pre-push
+
+`git push` 時に全パッケージのテストが走ります。`workspace` コンテナが起動中である必要があります。テストが失敗した場合はプッシュが中断されます。
+
+```bash
+# コンテナが停止している場合は先に起動する
+docker compose -f docker-compose.dev.yaml up -d workspace
+```
