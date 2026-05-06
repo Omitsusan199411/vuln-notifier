@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - "packages/**"
+      - ".github/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }} # github.workflow = ワークフロー名（name）、 github.ref = ブランチ名
