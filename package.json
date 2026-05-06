@@ -12,7 +12,9 @@
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
 		"check": "biome check",
-		"check:fix": "biome check --write"
+		"check:fix": "biome check --write",
+		"lint": "biome lint .",
+		"format": "biome format ."
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.14",
@@ -25,5 +27,9 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
-	"packageManager": "pnpm@10.33.2"
+	"packageManager": "pnpm@10.33.2",
+	"engines": {
+		"node": "24",
+		"pnpm": "10.33.2"
+	}
 }
