@@ -7,4 +7,4 @@ pre-commit:
 pre-push:
   commands:
     test:
-      run: docker compose -f docker-compose.dev.yaml exec -T pnpm run test
+      run: docker compose -f docker-compose.dev.yaml exec -T workspace pnpm run test
