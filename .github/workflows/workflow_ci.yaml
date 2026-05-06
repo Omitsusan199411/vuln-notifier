@@ -61,14 +61,18 @@ jobs:
         uses: ./.github/actions/setup
       - name: Start Test
         run: pnpm test:coverage
+      - name: Get Current Date
+        id: current-date
+        run: echo "date=$(date + "%Y%m%d")" >> $GITHUB_OUTPUT
+      - name: Tar Report
+        run: tar -czf coverage-report-${{ steps.current-date.outputs.date }}.tar.gz coverage/
       - name: Coverage Report Upload
-        if: success()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage-report # 成果物名
-          path: | # アップロードするファイルパス
-            coverage/
-          retention-days: 7
+          path: coverage-report-${{ steps.current-date.outputs.date }}.tar.gz # アップロードするファイルパス
+          if-no-files-found: error # 指定したパスにファイルが見つからない場合にエラーとする
+          retention-days: 3
 
   build:
     name: Build
