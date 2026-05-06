@@ -32,7 +32,7 @@ jobs:
 
   lint:
     name: Lint(Biome)
-    runs-on: ubuntu_latest
+    runs-on: ubuntu-latest
     timeout-minutes: 3
 
     steps:
