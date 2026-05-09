@@ -14,4 +14,7 @@ export default defineConfig({
 			reporter: ["text", "html"],
 		},
 	},
+	server: {
+		cors: false, // HonoのCORSミドルウェアとViteのCORS機能が競合しないように
+	},
 });

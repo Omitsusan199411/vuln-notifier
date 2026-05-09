@@ -1,10 +1,14 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { corsMiddleware } from "@/middleware/cors.js";
 
 export const app = new Hono();
 
+// CORSミドルウェアの適用
+app.use("*", corsMiddleware);
+
 app.get("/", (c) => {
-	return c.text("Hello Hono!");
+	return c.json({ message: "Hello Hono!" });
 });
 
 serve(
