@@ -3,6 +3,8 @@ FROM node:24-slim AS base
 # pnpm run を介さずワークスペースルートのバイナリを直接実行できるようにする
 ENV PATH=/root/node_modules/.bin/:$PATH
 
+ENV PNPM_HOME=/root/pnpm
+
 # corepack: package.json の packageManager に従って pnpm を呼び出せるようにする
 RUN corepack enable
 
@@ -11,7 +13,6 @@ WORKDIR /root
 
 FROM base AS workspace
 # store を ./:/root bind mount 内に置き、再起動後も永続化する
-ENV PNPM_HOME=/root/pnpm
 CMD ["sh", "-c", "pnpm install && sleep infinity"]
 
 
