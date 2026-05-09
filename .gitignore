@@ -48,3 +48,5 @@ coverage/
 # bash履歴（workspace コンテナの /root が ./:/root でマウントされているため、コンテナ内の履歴がホストに漏れる。）
 # アプリの設計上、./:/root を簡単に消すことはできない
 .bash_history
+
+packages/**/.pnpm-store/
