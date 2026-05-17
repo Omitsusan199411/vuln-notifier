@@ -50,3 +50,6 @@ coverage/
 .bash_history
 
 packages/**/.pnpm-store/
+
+# cursor mcp設定
+.cursor
