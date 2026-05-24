@@ -91,3 +91,8 @@ lefthook install
 # コンテナが停止している場合は先に起動する
 docker compose -f docker-compose.dev.yaml up -d workspace
 ```
+
+## DB設計
+
+### ER図
+![ER図を開く](./docs/db/er-diagram.drawio)
