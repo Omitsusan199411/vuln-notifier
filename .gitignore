@@ -53,3 +53,6 @@ packages/**/.pnpm-store/
 
 # cursor mcp設定
 .cursor
+
+# ローカルキャッシュ
+.cache
