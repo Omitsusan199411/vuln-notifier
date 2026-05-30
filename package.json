@@ -31,5 +31,8 @@
 	"engines": {
 		"node": "24",
 		"pnpm": "10.33.2"
+	},
+	"dependencies": {
+		"@types/pg": "^8.20.0"
 	}
 }
