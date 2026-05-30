@@ -11,3 +11,115 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// ユーザーモデル
+model User {
+  id String @id @default(nanoid())
+  cognitoSub String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vulnerabilityFetchConfigs VulnerabilityFetchConfig[]
+  batches Batch[]
+  notificationChannels NotificationChannel[]
+}
+
+// エコシステム（パッケージ管理ツール）モデル
+model Ecosystem {
+  id String @id @default(nanoid())
+  name String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vulnerabilityFetchConfigs VulnerabilityFetchConfig[]
+  vulnerabilities Vulnerability[]
+}
+
+// 脆弱性取得設定モデル
+model VulnerabilityFetchConfig {
+  id String @id @default(nanoid())
+  userId String
+  ecosystemId String
+  minSeverity Int @default(4)
+  minCvssScore Decimal @default(7.0) @db.Decimal(3, 1)
+  publishedLookbackDays Int @default(30)
+  maxFetchCount Int @default(10)
+  publishedOrderBy String @default("desc")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+}
+
+model Vulnerability {
+  id String @id @default(uuid(7))
+  ghsaId String
+  cveId String
+  ecosystemId String
+  batchId String
+  packageName String
+  severity Int?
+  cvssScore Decimal @db.Decimal(3, 1)
+  summary String?
+  llmSummary String?
+  advisoryUrl String?
+  publishedAt DateTime?
+  githubAdvisoryResponse Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+  @@unique([ghsaId, ecosystemId, packageName])
+}
+
+model Batch {
+  id String @id @default(uuid(7))
+  triggerType Int
+  triggeredBy String?
+  executedAt DateTime
+  status Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [triggeredBy], references: [id], onDelete: SetNull)
+  vulnerabilities Vulnerability[]
+}
+
+model NotificationChannel {
+  id String @id @default(nanoid())
+  userId String
+  type Int
+  maxNotificationLimit Int @default(10)
+  enabled Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineChannel LineChannel?
+  notifications Notification[]
+}
+
+model LineChannel {
+  id String @id @default(nanoid())
+  notificationChannelId String @unique
+  lineUserId String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id String @id @default(uuid(7))
+  notificationChannelId String @unique
+  vulnerabilityId String
+  notifiedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  vulnerability Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+}
