@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: vuln_development
     ports:
-      - "5432:5432"
+      - "5480:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -40,7 +40,7 @@ services:
       DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
       CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（tsxがchokidirにファイル変更がないかポーリングさせる）
     ports:
-      - "3001:3001"
+      - "4001:3001"
     volumes:
       - ./packages/api:/root/packages/api # ソースコードの変更をコンテナにリアルタイム反映
       - ./node_modules:/root/node_modules # workspace が pnpm install で作った node_modules を共有
@@ -63,9 +63,9 @@ services:
       dockerfile: Dockerfile.dev
       target: web
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:4001
     ports:
-      - "3000:3000"
+      - "4000:3000"
     volumes:
       - ./packages/web:/root/packages/web # ソースコードの変更をコンテナにリアルタイム反映
       - ./node_modules:/root/node_modules # workspace が pnpm install で作った node_modules を共有
