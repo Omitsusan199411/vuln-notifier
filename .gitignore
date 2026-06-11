@@ -56,3 +56,8 @@ packages/**/.pnpm-store/
 
 # ローカルキャッシュ
 .cache
+
+# claude
+.agents
+.claude
+skills-lock.json
