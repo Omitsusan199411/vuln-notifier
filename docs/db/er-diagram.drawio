@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="6EGp8ca7Tn7RA_AQ_-AW" name="ER図">
-        <mxGraphModel dx="1546" dy="1172" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+        <mxGraphModel dx="1566" dy="1218" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -1360,7 +1360,7 @@
                         <mxRectangle width="170" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="nl-ncid-constraint" value="UNIQUE" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="nl-row-ncid" vertex="1">
+                <mxCell id="nl-ncid-constraint" value="" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="nl-row-ncid" vertex="1">
                     <mxGeometry x="530" width="199.01666259765648" height="30" as="geometry">
                         <mxRectangle width="199.01666259765648" height="30" as="alternateBounds"/>
                     </mxGeometry>

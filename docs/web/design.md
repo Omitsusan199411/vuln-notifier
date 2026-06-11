@@ -20,6 +20,7 @@
 | UI コンポーネント | shadcn/ui |
 | API クライアント | Hono RPC |
 | 共有スキーマ・型 | `@repo/shared`（`packages/shared/`） |
+| テスト | Vitest + Testing Library + MSW |
 
 **データフェッチ方針:**
 - 一覧・詳細表示 → Server Components（DB に近い側でフェッチ）
@@ -252,14 +253,34 @@ packages/web/src/
 
 #### エラーの表示方法
 
-| エラー種別 | HTTP ステータス | 表示方法 |
-|---|---|---|
-| バリデーションエラー | 422 | フォームのインライン表示（React Hook Form） |
-| 認証エラー | 401 | サインインページにリダイレクト |
-| 権限エラー | 403 | ダッシュボードにリダイレクト |
-| リクエスト・競合エラー | 400・409 | Toast 表示（Sonner） |
-| サーバーエラー | 500 | `error.tsx` のエラーページ |
-| ページ未存在 | 404 | `not-found.tsx` のエラーページ |
+API は RFC 9457 形式でエラーを返す。フロントは `type` フィールドで分岐する。
+
+```typescript
+onError: (error) => {
+  switch (error.type) {
+    case '/problems/unauthorized':
+      router.push('/auth/signin')
+      break
+    case '/problems/validation-error':
+      // error.errors をフォームにマッピング
+      break
+    case '/problems/forbidden':
+      router.push('/dashboard')
+      break
+    default:
+      toast.error(error.title)
+  }
+}
+```
+
+| エラー種別 | `type` | HTTP ステータス | 表示方法 |
+|---|---|---|---|
+| バリデーションエラー | `/problems/validation-error` | 422 | フォームのインライン表示（React Hook Form） |
+| 認証エラー | `/problems/unauthorized` | 401 | サインインページにリダイレクト |
+| 権限エラー | `/problems/forbidden` | 403 | ダッシュボードにリダイレクト |
+| リクエスト・競合エラー | `/problems/bad-request` `/problems/conflict` | 400・409 | Toast 表示（Sonner） |
+| サーバーエラー | `/problems/internal-server-error` | 500 | `error.tsx` のエラーページ |
+| ページ未存在 | - | 404 | `not-found.tsx` のエラーページ |
 
 #### Toast ライブラリ
 

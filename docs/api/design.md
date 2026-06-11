@@ -107,15 +107,26 @@
 | メソッド | パス | 説明 | 権限 |
 |---|---|---|---|
 | `POST` | `/batches` | バッチ実行 | 一般ユーザー / 管理者 / スケジューラ |
-| `GET` | `/batches` | 全ユーザーのバッチ一覧取得 | 管理者 |
-| `GET` | `/users/:user_id/batches` | ユーザーのバッチ一覧取得 | 一般ユーザー / 管理者 |
-| `GET` | `/users/:user_id/batches/:batch_id` | バッチ詳細・実行状況取得 | 一般ユーザー / 管理者 |
+| `GET` | `/batches` | バッチ一覧取得 | 一般ユーザー / 管理者 |
+| `GET` | `/batches/:batch_id` | バッチ詳細・実行状況取得 | 一般ユーザー / 管理者 |
+
+**クエリパラメータ（`GET /batches`）:**
+
+| パラメータ | 説明 | 例 |
+|---|---|---|
+| `trigger_type` | 実行種別で絞り込み | `?trigger_type=manual` / `?trigger_type=scheduled` |
+| `cursor` | カーソルページネーション（前回レスポンスの `nextCursor` を指定） | `?cursor=<nextCursor>` |
+| `limit` | 取得件数 | `?limit=20` |
 
 **備考:**
 - `POST /batches` の呼び出し元によって挙動が変わる:
-  - 一般ユーザー / 管理者 → JWT から user_id を取得し、自分の `VulnerabilityConfig` のみを対象に実行（`triggerType`: 手動）
+  - 一般ユーザー / 管理者 → JWT から user_id を取得し、**自分の** `VulnerabilityConfig` のみを対象に実行（`triggerType`: 手動）
   - スケジューラ → 全ユーザーの `VulnerabilityConfig` を対象に実行（`triggerType`: スケジューラ）
-- `GET /batches`・`GET /users/:user_id/batches` はオフセットページネーション対応（`?page=1&limit=20`）。
+- 管理者が全ユーザー分を実行したい場合はスケジューラ経由のみ。管理者の手動実行も自分のみを対象とする。
+- `GET /batches` の返却内容:
+  - 一般ユーザー: 自分が手動実行したバッチ + スケジューラバッチ
+  - 管理者: 全バッチ
+- `triggeredBy` フィールドで手動実行者を識別できる（スケジューラ実行時は `null`）
 
 ---
 
@@ -131,7 +142,7 @@
 
 **備考:**
 - 脆弱性の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
-- `GET /vulnerabilities`・`GET /users/:user_id/vulnerabilities` はオフセットページネーション対応（`?page=1&limit=20`）。
+- `GET /vulnerabilities`・`GET /users/:user_id/vulnerabilities` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
 
 ---
 
@@ -145,7 +156,7 @@
 
 **備考:**
 - 通知の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
-- `GET /notifications`・`GET /users/:user_id/notifications` はオフセットページネーション対応（`?page=1&limit=20`）。
+- `GET /notifications`・`GET /users/:user_id/notifications` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
 
 ---
 
@@ -423,7 +434,7 @@ cors({
 | `origin` | 環境変数 `CORS_ORIGIN` | 環境ごとに許可オリジンを切り替える |
 | `allowHeaders` | `Authorization`, `Content-Type` | JWT 認証ヘッダーと JSON ボディに必要 |
 | `allowMethods` | `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS` | 全 HTTP メソッドを許可 |
-| `credentials` | `true` | Cookie（Auth.js のセッション）を送受信するため |
+| `credentials` | `true` | ブラウザがクロスオリジンリクエストに認証情報を含めることを許可。API 認証は Bearer トークンで行うため Cookie は使用しないが、Auth.js が Web 側で管理する HTTP-only Cookie との共存のために設定 |
 | `maxAge` | `600` | プリフライトリクエストを 10 分キャッシュ |
 
 ---

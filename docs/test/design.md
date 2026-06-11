@@ -24,7 +24,14 @@
 
 - テスト用 DB コンテナを開発用 DB と分離する（データが混ざらない疎結合）
 - `docker-compose.dev.yaml` に `db-test` コンテナを追加し、ポートを分ける
-- テスト時は `DATABASE_URL_TEST` 環境変数でテスト用 DB に接続する
+- テスト時は `packages/api/.env.test` で `DATABASE_URL` をテスト用 DB に切り替える
+
+```
+# packages/api/.env.test
+DATABASE_URL=postgresql://vuln:password@localhost:5433/vuln_test
+```
+
+Vitest は `NODE_ENV=test` のとき自動で `.env.test` を読み込む。
 
 ```yaml
 # docker-compose.dev.yaml に追加
