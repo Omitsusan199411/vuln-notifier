@@ -92,7 +92,23 @@ AWS Lambda（API）    Vercel（Web）
 
 ### 環境変数管理
 
-全ての環境変数は **GitHub Secrets** で管理する。
+`.env` ファイルは使用しない。環境ごとに以下の方法で管理する。
+
+#### ローカル開発
+
+`docker-compose.dev.yaml` の `environment` に直接記述する。
+
+#### テスト（ローカル）
+
+`docker-compose.dev.yaml` の `api` サービスに `TEST_DATABASE_URL` を追加し、`package.json` のテストスクリプトで `DATABASE_URL` を上書きする（詳細はテスト設計参照）。
+
+#### テスト（GitHub Actions）
+
+GitHub Actions の `env` で `DATABASE_URL` を直接渡す（詳細はテスト設計参照）。
+
+#### 本番（クラウド）
+
+**GitHub Secrets** で管理し、ECS タスク定義またはGitHub Actionsのワークフローで注入する。
 
 | 変数 | 説明 |
 |---|---|

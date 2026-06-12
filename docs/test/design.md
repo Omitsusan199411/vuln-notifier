@@ -23,18 +23,11 @@
 #### 方針
 
 - テスト用 DB コンテナを開発用 DB と分離する（データが混ざらない疎結合）
-- `docker-compose.dev.yaml` に `db-test` コンテナを追加し、ポートを分ける
-- テスト時は `packages/api/.env.test` で `DATABASE_URL` をテスト用 DB に切り替える
-
-```
-# packages/api/.env.test
-DATABASE_URL=postgresql://vuln:password@localhost:5433/vuln_test
-```
-
-Vitest は `NODE_ENV=test` のとき自動で `.env.test` を読み込む。
+- `.env` ファイルは使用しない。環境変数は docker-compose / GitHub Actions で管理する
+- `docker-compose.dev.yaml` に `db-test` コンテナを追加し、`api` サービスに `TEST_DATABASE_URL` を追加する
 
 ```yaml
-# docker-compose.dev.yaml に追加
+# docker-compose.dev.yaml に追加・変更
 db-test:
   image: postgres:18.1
   environment:
@@ -42,7 +35,40 @@ db-test:
     POSTGRES_PASSWORD: password
     POSTGRES_DB: vuln_test
   ports:
-    - "5433:5432"  # 開発用DB（5432）と分ける
+    - "5433:5432"  # 開発用DB（5480）と分ける
+
+api:
+  environment:
+    DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
+    TEST_DATABASE_URL: postgresql://vuln:password@db-test:5432/vuln_test
+```
+
+ルートの `package.json` のテストスクリプトで `DATABASE_URL` を上書きする：
+
+```json
+"test": "DATABASE_URL=$TEST_DATABASE_URL vitest run"
+```
+
+コンテナ内で `pnpm test` を実行するだけでテスト用 DB に切り替わる。
+
+**GitHub Actions:**
+
+```yaml
+jobs:
+  test:
+    services:
+      db-test:
+        image: postgres:18.1
+        env:
+          POSTGRES_USER: vuln
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: vuln_test
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://vuln:password@localhost:5432/vuln_test
+    steps:
+      - run: pnpm test
 ```
 
 #### テストデータのクリーンアップ
