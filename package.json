@@ -19,10 +19,11 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.14",
 		"@vitest/coverage-v8": "^4.1.5",
+		"esbuild": "^0.28.1",
 		"lefthook": "^2.1.6",
 		"turbo": "^2.9.14",
 		"typescript": "catalog:",
-		"vitest": "^4.1.5"
+		"vitest": "^4.1.8"
 	},
 	"keywords": [],
 	"author": "",
