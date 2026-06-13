@@ -17,6 +17,7 @@
 		"@types/node": "catalog:",
 		"prisma": "^7.8.0",
 		"tsx": "^4.7.1",
-		"typescript": "catalog:"
+		"typescript": "catalog:",
+		"zod-prisma-types": "^3.3.11"
 	}
 }
