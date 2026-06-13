@@ -18,6 +18,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.14",
+		"@types/pg": "^8.20.0",
 		"@vitest/coverage-v8": "^4.1.5",
 		"esbuild": "^0.28.1",
 		"lefthook": "^2.1.6",
@@ -34,7 +35,6 @@
 		"pnpm": "10.33.2"
 	},
 	"dependencies": {
-		"@types/pg": "^8.20.0",
 		"zod": "^4.4.3"
 	}
 }
