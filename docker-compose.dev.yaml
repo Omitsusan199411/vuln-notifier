@@ -1,6 +1,9 @@
+x-db-common: &db-common
+  image: postgres:18.1
+
 services:
   db:
-    image: postgres:18.1
+    <<: *db-common
     environment:
       POSTGRES_USER: vuln
       POSTGRES_PASSWORD: password
@@ -11,6 +14,22 @@ services:
       - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vuln -d vuln_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-test:
+    <<: *db-common
+    environment:
+      POSTGRES_USER: vuln
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vuln_test
+    ports:
+      - "5481:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vuln -d vuln_test"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -38,7 +57,9 @@ services:
       target: api
     environment:
       DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
+      TEST_DATABASE_URL: postgresql://vuln:password@db-test:5432/vuln_test
       CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（tsxがchokidirにファイル変更がないかポーリングさせる）
+      CORS_ORIGIN: http://localhost:4000
     ports:
       - "4001:3001"
     volumes:
@@ -53,6 +74,8 @@ services:
       retries: 5
     depends_on:
       db:
+        condition: service_healthy
+      db-test:
         condition: service_healthy
       workspace:
         condition: service_healthy
@@ -77,3 +100,4 @@ services:
 
 volumes:
   postgres_data:
+  postgres_test_data:
