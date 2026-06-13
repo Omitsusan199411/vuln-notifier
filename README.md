@@ -63,12 +63,28 @@ docker compose -f docker-compose.dev.yaml exec workspace pnpm test:watch
 docker compose -f docker-compose.dev.yaml exec workspace pnpm test:coverage
 ```
 
-テストファイルは各パッケージの `src/tests/` 以下に配置します。
+テストファイルは対象コードと同じディレクトリに配置します（コロケーション）。
 
 | パッケージ | 環境 | テストファイルの場所 |
 |---|---|---|
-| `api` | Node | `packages/api/src/tests/**/*.test.ts` |
-| `web` | jsdom | `packages/web/src/tests/**/*.test.{ts,tsx}` |
+| `api` | Node | `packages/api/src/**/*.test.ts` |
+| `web` | jsdom | `packages/web/src/**/*.test.{ts,tsx}` |
+
+### Prisma
+
+```bash
+# マイグレーションファイルの作成・適用（開発時）
+docker compose -f docker-compose.dev.yaml exec api pnpm --filter api exec prisma migrate dev --name <migration-name>
+
+# マイグレーションの適用のみ（本番・CI）
+docker compose -f docker-compose.dev.yaml exec api pnpm --filter api exec prisma migrate deploy
+
+# Prismaクライアント・Zodスキーマの生成
+docker compose -f docker-compose.dev.yaml exec workspace pnpm --filter api exec prisma generate
+
+# Prisma Studio（DB GUIツール）
+docker compose -f docker-compose.dev.yaml exec api pnpm --filter api exec prisma studio
+```
 
 ### Git フック（Lefthook）
 
