@@ -1,7 +1,12 @@
 import { cors } from "hono/cors";
 
+const origin = process.env.CORS_ORIGIN;
+if (!origin) {
+	throw new Error("CORS origin environment variable is required");
+}
+
 export const corsMiddleware = cors({
-	origin: process.env.CORS_ORIGIN,
+	origin,
 	allowHeaders: ["Authorization", "Content-Type"],
 	allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 	exposeHeaders: ["Content-Length"],
