@@ -1,9 +1,11 @@
-x-db-common: &db-common
+x-shared-db: &shared-db
   image: postgres:18.1
-
+x-shared-env: &shared-env
+  CORS_ORIGIN: http://localhost:4000
+  CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（vitestがchokidirでファイル変更がないかポーリングさせる）
 services:
   db:
-    <<: *db-common
+    <<: *shared-db
     environment:
       POSTGRES_USER: vuln
       POSTGRES_PASSWORD: password
@@ -19,7 +21,7 @@ services:
       retries: 5
 
   db-test:
-    <<: *db-common
+    <<: *shared-db
     environment:
       POSTGRES_USER: vuln
       POSTGRES_PASSWORD: password
@@ -40,7 +42,7 @@ services:
       dockerfile: Dockerfile.dev
       target: workspace
     environment:
-      CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（vitestがchokidirでファイル変更がないかポーリングさせる）
+      <<: *shared-env
     volumes:
       - ./:/root
     healthcheck:
@@ -56,10 +58,9 @@ services:
       dockerfile: Dockerfile.dev
       target: api
     environment:
+      <<: *shared-env
       DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
       TEST_DATABASE_URL: postgresql://vuln:password@db-test:5432/vuln_test
-      CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（tsxがchokidirにファイル変更がないかポーリングさせる）
-      CORS_ORIGIN: http://localhost:4000
     ports:
       - "4001:3001"
     volumes:
