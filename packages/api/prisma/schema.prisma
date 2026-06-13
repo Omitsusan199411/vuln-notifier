@@ -8,118 +8,182 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+generator zod {
+  provider = "zod-prisma-types"
+  output = "../../shared/src/generated"
+}
+
 datasource db {
   provider = "postgresql"
 }
 
+// 脆弱性の深刻度
+enum Severity {
+  unknown
+  low
+  medium
+  high
+  critical
+  @@map("severity")
+}
+
+// バッチのトリガー種別（scheduled: 定期実行, manual: 手動実行）
+enum BatchTriggerType {
+  scheduled
+  manual
+  @@map("batch_trigger_type")
+}
+
+// バッチの実行ステータス
+enum BatchStatus {
+  pending
+  running
+  success
+  failed
+  @@map("batch_status")
+}
+
+// 通知チャンネルの種別
+enum NotificationChannelType {
+  line
+  @@map("notification_channel_type")
+}
+
 // ユーザーモデル
 model User {
-  id String @id @default(nanoid())
-  cognitoSub String @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(nanoid())
+  cognitoSub String   @unique @map("cognito_sub")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  vulnerabilityFetchConfigs VulnerabilityFetchConfig[]
-  batches Batch[]
+  vulnerabilityConfigs VulnerabilityConfig[]
+  batches              Batch[]
   notificationChannels NotificationChannel[]
+
+  @@map("users")
 }
 
 // エコシステム（パッケージ管理ツール）モデル
 model Ecosystem {
-  id String @id @default(nanoid())
-  name String @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String   @id @default(nanoid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  vulnerabilityFetchConfigs VulnerabilityFetchConfig[]
-  vulnerabilities Vulnerability[]
+  vulnerabilityConfigs VulnerabilityConfig[]
+  vulnerabilities      Vulnerability[]
+
+  @@map("ecosystems")
 }
 
 // 脆弱性取得設定モデル
-model VulnerabilityFetchConfig {
-  id String @id @default(nanoid())
-  userId String
-  ecosystemId String
-  minSeverity Int @default(4)
-  minCvssScore Decimal @default(7.0) @db.Decimal(3, 1)
-  publishedLookbackDays Int @default(30)
-  maxFetchCount Int @default(10)
-  publishedOrderBy String @default("desc")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model VulnerabilityConfig {
+  id                   String   @id @default(nanoid())
+  userId               String   @map("user_id")
+  ecosystemId          String   @map("ecosystem_id")
+  minSeverity          Severity @default(high) @map("min_severity")
+  minCvssScore         Decimal  @default(7.0) @map("min_cvss_score") @db.Decimal(3, 1)
+  publishedLookbackDays Int     @default(30) @map("published_lookback_days")
+  maxFetchCount        Int      @default(10) @map("max_fetch_count")
+  publishedOrderBy     String   @default("desc") @map("published_order_by")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ecosystemId])
+  @@index([userId, updatedAt])
+  @@index([updatedAt])
+  @@map("vulnerability_configs")
 }
 
 model Vulnerability {
-  id String @id @default(uuid(7))
-  ghsaId String
-  cveId String
-  ecosystemId String
-  batchId String
-  packageName String
-  severity Int?
-  cvssScore Decimal @db.Decimal(3, 1)
-  summary String?
-  llmSummary String?
-  advisoryUrl String?
-  publishedAt DateTime?
-  githubAdvisoryResponse Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     String    @id @default(uuid(7))
+  ghsaId                 String    @map("ghsa_id")
+  cveId                  String    @map("cve_id")
+  ecosystemId            String    @map("ecosystem_id")
+  batchId                String    @map("batch_id")
+  packageName            String    @map("package_name")
+  severity               Severity?
+  cvssScore              Decimal   @map("cvss_score") @db.Decimal(3, 1)
+  summary                String?
+  llmSummary             String?   @map("llm_summary")
+  advisoryUrl            String?   @map("advisory_url")
+  publishedAt            DateTime? @map("published_at")
+  githubAdvisoryResponse Json      @map("github_advisory_response")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
 
-  ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
-  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  ecosystem     Ecosystem      @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+  batch         Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
   notifications Notification[]
+
   @@unique([ghsaId, ecosystemId, packageName])
+  @@index([updatedAt])
+  @@index([batchId])
+  @@map("vulnerabilities")
 }
 
 model Batch {
-  id String @id @default(uuid(7))
-  triggerType Int
-  triggeredBy String?
-  executedAt DateTime
-  status Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String           @id @default(uuid(7))
+  triggerType BatchTriggerType @map("trigger_type")
+  triggeredBy String?          @map("triggered_by")
+  executedAt  DateTime         @map("executed_at")
+  status      BatchStatus
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
-  user User? @relation(fields: [triggeredBy], references: [id], onDelete: SetNull)
+  user            User?           @relation(fields: [triggeredBy], references: [id], onDelete: SetNull)
   vulnerabilities Vulnerability[]
+
+  @@index([triggerType, executedAt])
+  @@index([triggeredBy, executedAt])
+  @@index([status])
+  @@map("batches")
 }
 
 model NotificationChannel {
-  id String @id @default(nanoid())
-  userId String
-  type Int
-  maxNotificationLimit Int @default(10)
-  enabled Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String                @id @default(nanoid())
+  userId              String                @map("user_id")
+  type                NotificationChannelType
+  maxNotificationLimit Int                  @default(10) @map("max_notification_limit")
+  enabled             Boolean               @default(true)
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lineChannel LineChannel?
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineChannel   LineChannel?
   notifications Notification[]
+
+  @@index([userId, enabled])
+  @@map("notification_channels")
 }
 
 model LineChannel {
-  id String @id @default(nanoid())
-  notificationChannelId String @unique
-  lineUserId String @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(nanoid())
+  notificationChannelId String   @unique @map("notification_channel_id")
+  lineUserId            String   @unique @map("line_user_id")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+
+  @@map("line_channels")
 }
 
 model Notification {
-  id String @id @default(uuid(7))
-  notificationChannelId String @unique
-  vulnerabilityId String
-  notifiedAt DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(uuid(7))
+  notificationChannelId String   @map("notification_channel_id")
+  vulnerabilityId       String   @map("vulnerability_id")
+  notifiedAt            DateTime @default(now()) @map("notified_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
-  vulnerability Vulnerability @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+  vulnerability       Vulnerability       @relation(fields: [vulnerabilityId], references: [id], onDelete: Cascade)
+
+  @@index([notifiedAt])
+  @@index([notificationChannelId, createdAt])
+  @@map("notifications")
 }
