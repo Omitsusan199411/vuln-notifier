@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   audit:
-    name: Vulunerability Audit(pnpm audit)
+    name: Vulnerability Audit(pnpm audit)
     runs-on: ubuntu-latest
     timeout-minutes: 3
 
@@ -77,6 +77,10 @@ jobs:
           persist-credentials: false
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup
+      - name: prisma generate
+        run: pnpm --filter api exec prisma generate
+      - name: prisma migrate deploy
+        run: pnpm --filter api exec prisma migrate deploy
       - name: Start Test
         run: pnpm test:coverage
       - name: Get Current Date
