@@ -311,12 +311,12 @@
                         <mxRectangle width="120.21060341282896" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="nc-type-type" value="ENUM" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="nc-row-type" vertex="1">
+                <mxCell id="nc-type-type" value="ENUM(line)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="nc-row-type" vertex="1">
                     <mxGeometry x="280.8553370425577" width="94.7368421052629" height="30" as="geometry">
                         <mxRectangle width="94.7368421052629" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="nc-type-constraint" value="NOT NULL&lt;div&gt;line&lt;/div&gt;" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="nc-row-type" vertex="1">
+                <mxCell id="nc-type-constraint" value="NOT NULL" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="nc-row-type" vertex="1">
                     <mxGeometry x="375.5921791478206" width="173.47360711348733" height="30" as="geometry">
                         <mxRectangle width="173.47360711348733" height="30" as="alternateBounds"/>
                     </mxGeometry>
@@ -681,12 +681,12 @@
                         <mxRectangle width="140" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="me-severity-type" value="Integer(num)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="me-row-severity" vertex="1">
+                <mxCell id="me-severity-type" value="ENUM(unknown/low/medium/high/critical)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="me-row-severity" vertex="1">
                     <mxGeometry x="350" width="170" height="30" as="geometry">
                         <mxRectangle width="170" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="me-severity-constraint" value="NOT NULL, DEFAULT high&lt;div&gt;unknown / low / medium / high / critical&lt;/div&gt;" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="me-row-severity" vertex="1">
+                <mxCell id="me-severity-constraint" value="NOT NULL, DEFAULT high" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="me-row-severity" vertex="1">
                     <mxGeometry x="520" width="250" height="30" as="geometry">
                         <mxRectangle width="250" height="30" as="alternateBounds"/>
                     </mxGeometry>
@@ -1072,12 +1072,12 @@
                         <mxRectangle width="157.89708395565248" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="vln-severity-type" value="ENUM(low/medium/high/critical)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="vln-row-severity" vertex="1">
+                <mxCell id="vln-severity-type" value="ENUM(unknown/low/medium/high/critical)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="vln-row-severity" vertex="1">
                     <mxGeometry x="347.8970839556525" width="195.29411764705918" height="30" as="geometry">
                         <mxRectangle width="195.29411764705918" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="vln-severity-constraint" value="unknown / low / medium / high / critical" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="vln-row-severity" vertex="1">
+                <mxCell id="vln-severity-constraint" value="" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="vln-row-severity" vertex="1">
                     <mxGeometry x="543.1912016027117" width="389.3770412506261" height="30" as="geometry">
                         <mxRectangle width="389.3770412506261" height="30" as="alternateBounds"/>
                     </mxGeometry>
@@ -1526,12 +1526,12 @@
                         <mxRectangle width="140" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="bl-trigger-type" value="ENUM" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="bl-row-trigger" vertex="1">
+                <mxCell id="bl-trigger-type" value="ENUM(scheduled/manual)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="bl-row-trigger" vertex="1">
                     <mxGeometry x="360" width="230.84738159179642" height="30" as="geometry">
                         <mxRectangle width="230.84738159179642" height="30" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="bl-trigger-constraint" value="NOT NULL&lt;div&gt;scheduled / manual&lt;/div&gt;" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="bl-row-trigger" vertex="1">
+                <mxCell id="bl-trigger-constraint" value="NOT NULL" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="bl-row-trigger" vertex="1">
                     <mxGeometry x="590.8473815917964" width="148.88888888889005" height="30" as="geometry">
                         <mxRectangle width="148.88888888889005" height="30" as="alternateBounds"/>
                     </mxGeometry>
@@ -1610,12 +1610,12 @@
                         <mxRectangle width="140" height="49" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="bl-status-type" value="ENUM" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="bl-row-status" vertex="1">
+                <mxCell id="bl-status-type" value="ENUM(pending/running/success/failed)" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;overflow=hidden;html=1;" parent="bl-row-status" vertex="1">
                     <mxGeometry x="360" width="230.84738159179642" height="49" as="geometry">
                         <mxRectangle width="230.84738159179642" height="49" as="alternateBounds"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="bl-status-constraint" value="NOT NULL&lt;div&gt;pending / running / success / failed&lt;/div&gt;" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="bl-row-status" vertex="1">
+                <mxCell id="bl-status-constraint" value="NOT NULL" style="shape=partialRectangle;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;fontSize=10;align=left;overflow=hidden;html=1;" parent="bl-row-status" vertex="1">
                     <mxGeometry x="590.8473815917964" width="148.88888888889005" height="49" as="geometry">
                         <mxRectangle width="148.88888888889005" height="49" as="alternateBounds"/>
                     </mxGeometry>
