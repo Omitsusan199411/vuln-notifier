@@ -40,7 +40,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-      target: workspace
+      target: workspace # Dockerfile.dev の AS workspace ステージを使用
     environment:
       <<: *shared-env
     volumes:
@@ -56,7 +56,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-      target: api
+      target: api # Dockerfile.dev の AS api ステージを使用
     environment:
       <<: *shared-env
       DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
@@ -85,7 +85,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-      target: web
+      target: web # Dockerfile.dev の AS web ステージを使用
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:4001
     ports:
