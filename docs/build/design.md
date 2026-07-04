@@ -112,8 +112,10 @@ Node.js 素（本番）:      source/types なし → import にフォールバ�
 ### src/index.ts（バレルファイル）
 
 ```ts
-export * from './generated/index.ts'
+export * from './generated/index.js'
 ```
+
+`module: NodeNext` では import 指定子にコンパイル後の拡張子（`.js`）を書く必要があるため、ソースは `.ts` でも import 文は `.js` で書きます。
 
 `src/index.ts` は shared の公開 API の窓口です。外部（api・web）は常に `@repo/shared` からのみ import します。
 
@@ -122,8 +124,8 @@ export * from './generated/index.ts'
 shared に新しいファイルを追加した場合、`src/index.ts` に1行追加します。
 
 ```ts
-export * from './generated/index.ts'
-export * from './validators/index.ts'  // 追加
+export * from './generated/index.js'
+export * from './validators/index.js'  // 追加
 ```
 
 外部の import パスは変わりません。
@@ -180,6 +182,7 @@ node dist/index.js  # 起動
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "types": ["node"],
+    "rootDir": "./src",
     "outDir": "./dist",
     "paths": {
       "@/*": ["./src/*"]
@@ -191,15 +194,17 @@ node dist/index.js  # 起動
 
 project references は不要です。Turborepo が shared → api のビルド順序を保証します。
 
+`rootDir` を明示しているのは、`@repo/shared` を参照することで `tsc` の rootDir 自動推論が `packages/shared/src` まで広がり、`dist/` の出力構造が崩れるのを防ぐためです。
+
 ### package.json
 
 ```json
 {
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "start": "node dist/index.js",
+    "typeCheck": "tsc --noEmit"
   },
   "dependencies": {
     "@repo/shared": "workspace:*"
@@ -211,6 +216,8 @@ project references は不要です。Turborepo が shared → api のビルド�
 ```
 
 本番起動は `node dist/index.js` のため tsx は不要です。tsx は開発時のみ使用するため `devDependencies` に配置します。
+
+> **注意**: 型チェックscriptの名前は api が `typeCheck`、web が `type:check` と表記が揺れています（後述）。統一する場合は別途対応してください。
 
 ---
 
@@ -247,10 +254,10 @@ const nextConfig = {
 ```json
 {
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "type:check": "tsc --noEmit"
   },
   "dependencies": {
     "@repo/shared": "workspace:*"
@@ -340,16 +347,3 @@ WORKDIR /app
 COPY --from=builder /prod/api .
 CMD ["node", "dist/index.js"]
 ```
-
----
-
-## TODO
-
-- [ ] packages/shared の package.json を更新（exports, scripts）
-- [ ] packages/shared の tsconfig.json を作成
-- [ ] packages/shared の src/index.ts（バレルファイル）を作成
-- [ ] packages/api の package.json を更新（dependencies, scripts）
-- [ ] packages/api の tsconfig.json を更新（references 削除）
-- [ ] packages/web の next.config.ts に transpilePackages を追加
-- [ ] packages/web の package.json に @repo/shared を追加
-- [ ] 本番用 Dockerfile を作成（api, web それぞれ）
