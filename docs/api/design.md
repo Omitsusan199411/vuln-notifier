@@ -5,6 +5,7 @@
 - [権限レベル定義](#権限レベル定義)
 - [認証](#認証)
 - [エンドポイント一覧](#エンドポイント一覧)
+- [LLM連携](#llm連携)
 - [エラーハンドリング](#エラーハンドリング)
 - [ログ設計](#ログ設計)
 - [CORS 設定](#cors-設定)
@@ -158,6 +159,108 @@
 **備考:**
 - 通知の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
 - `GET /notifications`・`GET /users/:user_id/notification-channels/:channel_id/notifications` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
+
+---
+
+### LLM連携
+
+脆弱性の要約（`Vulnerability.llmSummary`）は、バッチ実行（`POST /batches`）のハンドラー内で、GitHub Advisoryから取得した情報をもとに生成する。
+
+#### 使用サービス
+
+| 項目 | 内容 |
+|---|---|
+| プロバイダー | Amazon Bedrock |
+| モデル | Anthropic Claude Haiku（東京リージョン: `ap-northeast-1`） |
+| モデルバージョン | TODO: `BEDROCK_MODEL_ID` 環境変数で指定し、コード変更なしにアップデートできるようにする |
+| オーケストレーションツール | 使用しない（LangChain・LangGraphは不採用） |
+
+**LangChain・LangGraphを採用しない理由:** 要約処理は「1件の脆弱性情報を渡して要約を1回もらう」という単発の呼び出しであり、複数ステップの連鎖（LangChainの得意領域）や、分岐・ループを伴う状態管理（LangGraphの得意領域）を必要としない。単発呼び出しに対してこれらのフレームワークを導入すると、依存が増えるだけでメリットがない。`@aws-sdk/client-bedrock-runtime` を直接呼び出す。
+
+#### 入出力
+
+| 項目 | 内容 |
+|---|---|
+| 入力 | `Vulnerability.githubAdvisoryResponse`（GitHub Advisory APIのレスポンスをそのまま渡す。特定フィールドの抽出は行わない） |
+| 出力 | プレーンテキストの要約文字列（`llmSummary` は `String?` のため、構造化出力は採用しない） |
+
+#### エラーハンドリング
+
+| 項目 | 内容 |
+|---|---|
+| リトライ | 固定間隔・最大2回リトライ（計3回試行）。各試行の間隔は1秒 |
+| リトライ後も失敗した場合 | `llmSummary` を `null` のまま保存し、バッチ処理は継続する（要約なしで通知を送る） |
+| バッチ全体を失敗させるか | させない。LLM要約は付加価値であり、脆弱性通知そのものをブロックする理由にはしない |
+
+#### 並列実行
+
+バッチ内で複数の新規脆弱性を要約する場合、同時実行数は最大3件に制限する。Bedrockのレート制限（スロットリング）を回避しつつ、処理速度を確保するため。運用実績を見ながら調整する。
+
+#### ローカル開発・テスト
+
+| 環境 | 使用するクライアント |
+|---|---|
+| ローカル開発 | `FakeSummaryClient`（固定文字列を返す） |
+| 自動テスト（Vitest） | `FakeSummaryClient` |
+| 本番 | `BedrockSummaryClient` |
+
+**理由:** 開発者ごとにAWS認証情報・Bedrockのモデルアクセス許可を用意するコストを避け、CIでもAWS Secretsを増やさずに済むため。本物のBedrockで動作確認したい場合は、環境変数で個別に切り替えられるようにする。
+
+#### 予算管理
+
+Amazon Bedrock自体には、コスト（$）に対するネイティブなハード上限機能は存在しない（AWS Budgetsのアラートは請求データ由来で遅延があり、リアルタイムに呼び出しを止められない）。そのため、アプリケーション層で月間の使用量を自前管理し、呼び出し前に同期的にチェックする方式を採る。
+
+**テーブル設計:**
+
+```prisma
+model LlmMonthlyUsage {
+  id           String   @id @default(nanoid())
+  year         Int
+  month        Int      // 1〜12
+  inputTokens  Int      @default(0) @map("input_tokens")
+  outputTokens Int      @default(0) @map("output_tokens")
+  costUsd      Decimal  @default(0) @map("cost_usd") @db.Decimal(10, 6)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([year, month])
+  @@map("llm_monthly_usages")
+}
+```
+
+**`year`/`month`を個別の`Int`型にする理由:** 月次データを`DATE`型（月初日を格納）で表現する方法も検討したが、「月初日をどう作るか」の実装がタイムゾーン依存になりやすい（ローカルタイムゾーンの`getFullYear()`/`getMonth()`を使うと、UTC変換時に日付が前後にずれ、月をまたぐタイミングで集計が混線するバグを生みやすい）。`year`/`month`を個別の`Int`型にすることで、そもそも「日」を扱わないため、この種のタイムゾーンバグが構造的に発生しない。
+
+**トークン数・コストの取得方法:** 別途トークナイザーは使用しない。BedrockのInvokeModelレスポンスに含まれる`usage.input_tokens`/`usage.output_tokens`の実測値をそのまま加算する。
+
+**更新方法:** Prismaの`increment`を使い、DB側でアトミックに加算する（並列実行数3の同時書き込みでも取りこぼしが起きないようにするため）。
+
+```typescript
+await prisma.llmMonthlyUsage.upsert({
+  where: { year_month: { year, month } },
+  create: { year, month, inputTokens, outputTokens, costUsd },
+  update: {
+    inputTokens: { increment: inputTokens },
+    outputTokens: { increment: outputTokens },
+    costUsd: { increment: costUsd },
+  },
+})
+```
+
+**予算チェックの置き場所:** `SummaryClient`の実装（`BedrockSummaryClient`）ではなく、usecase層で`summaryClient.summarize()`を呼ぶ前にチェックする。予算管理はLLM呼び出し手段（Bedrockかどうか）とは独立した関心事であり、`SummaryClient`に混ぜると`FakeSummaryClient`にも同じロジックの重複実装が必要になるほか、「予算超過」と「呼び出し失敗」が戻り値だけで区別できなくなるため。
+
+月間予算額（`MONTHLY_LLM_BUDGET_USD`）: TODO: 具体的な金額を運用しながら決定し、環境変数で設定する。
+
+#### アーキテクチャ
+
+既存の`infrastructure/clients/`のパターン（`github/AdvisoryClient.ts`、`line/NotificationClient.ts`）に倣う。
+
+```
+infrastructure/clients/llm/
+├── SummaryClient.ts        # interface
+└── BedrockSummaryClient.ts # Bedrock実装（東京リージョン）
+```
+
+usecase層は`SummaryClient`インターフェースにのみ依存し、Bedrockという具体的な実装を知らない（依存性逆転の原則）。テストでは`FakeSummaryClient`を注入する。
 
 ---
 
@@ -506,9 +609,12 @@ packages/api/src/
 │       ├── line/
 │       │   ├── NotificationClient.ts              # interface
 │       │   └── LineNotificationClient.ts
-│       └── github/
-│           ├── AdvisoryClient.ts                  # interface
-│           └── GithubAdvisoryClient.ts
+│       ├── github/
+│       │   ├── AdvisoryClient.ts                  # interface
+│       │   └── GithubAdvisoryClient.ts
+│       └── llm/
+│           ├── SummaryClient.ts                   # interface
+│           └── BedrockSummaryClient.ts
 │
 ├── lib/
 │   └── prisma.ts
@@ -562,3 +668,5 @@ routes → usecases → domain（entity + Repository interface）
 |---|---|
 | LINE チャネル連携 | TODO: `lineUserId` の取得・登録フローを設計する |
 | スケジューラ認証 | TODO: M2M（Cognito Client Credentials フロー）の詳細をインフラ設計フェーズで設計する |
+| LLMモデルバージョン | TODO: `BEDROCK_MODEL_ID` の具体的な値を実装フェーズで決定する |
+| 月間LLM予算額 | TODO: `MONTHLY_LLM_BUDGET_USD` の具体的な金額を運用しながら決定する |
