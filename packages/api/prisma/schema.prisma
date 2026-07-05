@@ -10,7 +10,7 @@ generator client {
 
 generator zod {
   provider = "zod-prisma-types"
-  output = "../../shared/src/generated"
+  output   = "../../shared/src/generated"
 }
 
 datasource db {
@@ -24,6 +24,7 @@ enum Severity {
   medium
   high
   critical
+
   @@map("severity")
 }
 
@@ -31,6 +32,7 @@ enum Severity {
 enum BatchTriggerType {
   scheduled
   manual
+
   @@map("batch_trigger_type")
 }
 
@@ -40,12 +42,14 @@ enum BatchStatus {
   running
   success
   failed
+
   @@map("batch_status")
 }
 
 // 通知チャンネルの種別
 enum NotificationChannelType {
   line
+
   @@map("notification_channel_type")
 }
 
@@ -78,16 +82,16 @@ model Ecosystem {
 
 // 脆弱性取得設定モデル
 model VulnerabilityConfig {
-  id                   String   @id @default(nanoid())
-  userId               String   @map("user_id")
-  ecosystemId          String   @map("ecosystem_id")
-  minSeverity          Severity @default(high) @map("min_severity")
-  minCvssScore         Decimal  @default(7.0) @map("min_cvss_score") @db.Decimal(3, 1)
-  publishedLookbackDays Int     @default(30) @map("published_lookback_days")
-  maxFetchCount        Int      @default(10) @map("max_fetch_count")
-  publishedOrderBy     String   @default("desc") @map("published_order_by")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                    String   @id @default(nanoid())
+  userId                String   @map("user_id")
+  ecosystemId           String   @map("ecosystem_id")
+  minSeverity           Severity @default(high) @map("min_severity")
+  minCvssScore          Decimal  @default(7.0) @map("min_cvss_score") @db.Decimal(3, 1)
+  publishedLookbackDays Int      @default(30) @map("published_lookback_days")
+  maxFetchCount         Int      @default(10) @map("max_fetch_count")
+  publishedOrderBy      String   @default("desc") @map("published_order_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
@@ -144,13 +148,13 @@ model Batch {
 }
 
 model NotificationChannel {
-  id                  String                @id @default(nanoid())
-  userId              String                @map("user_id")
-  type                NotificationChannelType
-  maxNotificationLimit Int                  @default(10) @map("max_notification_limit")
-  enabled             Boolean               @default(true)
-  createdAt           DateTime              @default(now()) @map("created_at")
-  updatedAt           DateTime              @updatedAt @map("updated_at")
+  id                   String                  @id @default(nanoid())
+  userId               String                  @map("user_id")
+  type                 NotificationChannelType
+  maxNotificationLimit Int                     @default(10) @map("max_notification_limit")
+  enabled              Boolean                 @default(true)
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   lineChannel   LineChannel?
@@ -186,4 +190,18 @@ model Notification {
   @@index([notifiedAt])
   @@index([notificationChannelId, createdAt])
   @@map("notifications")
+}
+
+model LlmMonthlyUsage {
+  id           String   @id @default(nanoid())
+  year         Int
+  month        Int
+  inputTokens  Int      @default(0) @map("input_tokens")
+  outputTokens Int      @default(0) @map("output_tokens")
+  costUsd      Decimal  @default(0) @map("cost_usd")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([year, month])
+  @@map("llm_monthly_usages")
 }

@@ -219,7 +219,7 @@ model LlmMonthlyUsage {
   month        Int      // 1〜12
   inputTokens  Int      @default(0) @map("input_tokens")
   outputTokens Int      @default(0) @map("output_tokens")
-  costUsd      Decimal  @default(0) @map("cost_usd") @db.Decimal(10, 6)
+  costUsd      Decimal  @default(0) @map("cost_usd")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

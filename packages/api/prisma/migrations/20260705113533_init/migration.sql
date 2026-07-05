@@ -116,6 +116,20 @@ CREATE TABLE "notifications" (
     CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "llm_monthly_usages" (
+    "id" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "month" INTEGER NOT NULL,
+    "input_tokens" INTEGER NOT NULL DEFAULT 0,
+    "output_tokens" INTEGER NOT NULL DEFAULT 0,
+    "cost_usd" DECIMAL(65,30) NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "llm_monthly_usages_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_cognito_sub_key" ON "users"("cognito_sub");
 
@@ -163,6 +177,9 @@ CREATE INDEX "notifications_notified_at_idx" ON "notifications"("notified_at");
 
 -- CreateIndex
 CREATE INDEX "notifications_notification_channel_id_created_at_idx" ON "notifications"("notification_channel_id", "created_at");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "llm_monthly_usages_year_month_key" ON "llm_monthly_usages"("year", "month");
 
 -- AddForeignKey
 ALTER TABLE "vulnerability_configs" ADD CONSTRAINT "vulnerability_configs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
