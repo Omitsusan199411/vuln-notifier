@@ -45,6 +45,7 @@ services:
       <<: *shared-env
     volumes:
       - ./:/root
+      - node_modules:/root/node_modules
     healthcheck:
       test: ["CMD", "turbo", "--version"] # pnpm install 完了後に turbo が実行可能になることで healthy と判定
       interval: 5s
@@ -65,9 +66,10 @@ services:
       - "4001:3001"
     volumes:
       - ./packages/api:/root/packages/api # ソースコードの変更をコンテナにリアルタイム反映
-      - ./node_modules:/root/node_modules # workspace が pnpm install で作った node_modules を共有
       - ./package.json:/root/package.json:ro # Corepack が packageManager フィールドを読み pnpm@10.33.2 を使用するため
       - ./pnpm-workspace.yaml:/root/pnpm-workspace.yaml:ro # catalog: 参照（@types/node 等）を解決するため
+      - ./packages/shared:/root/packages/shared
+      - node_modules:/root/node_modules
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/').then(res => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 5s
@@ -92,9 +94,10 @@ services:
       - "4000:3000"
     volumes:
       - ./packages/web:/root/packages/web # ソースコードの変更をコンテナにリアルタイム反映
-      - ./node_modules:/root/node_modules # workspace が pnpm install で作った node_modules を共有
       - ./package.json:/root/package.json:ro # Corepack が packageManager フィールドを読み pnpm@10.33.2 を使用するため
       - ./pnpm-workspace.yaml:/root/pnpm-workspace.yaml:ro # catalog: 参照（@types/node 等）を解決するため
+      - ./packages/shared:/root/packages/shared
+      - node_modules:/root/node_modules
     depends_on:
       api:
         condition: service_healthy
@@ -102,3 +105,4 @@ services:
 volumes:
   postgres_data:
   postgres_test_data:
+  node_modules:
