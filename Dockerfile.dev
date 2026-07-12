@@ -13,16 +13,16 @@ WORKDIR /root
 
 FROM base AS workspace
 # store を ./:/root bind mount 内に置き、再起動後も永続化する
-CMD ["sh", "-c", "pnpm install && sleep infinity"]
+ENTRYPOINT ["sh", "-c", "pnpm install && sleep infinity"]
 
 
 FROM base AS api
 WORKDIR /root/packages/api
 EXPOSE 3001
-CMD ["pnpm", "dev"]
+ENTRYPOINT ["pnpm", "dev"]
 
 
 FROM base AS web
 WORKDIR /root/packages/web
 EXPOSE 3000
-CMD ["pnpm", "dev"]
+ENTRYPOINT ["pnpm", "dev"]
