@@ -24,10 +24,10 @@
 
 - テスト用 DB コンテナを開発用 DB と分離する（データが混ざらない疎結合）
 - `.env` ファイルは使用しない。環境変数は docker-compose / GitHub Actions で管理する
-- `docker-compose.dev.yaml` に `db-test` コンテナを追加し、`api` サービスに `TEST_DATABASE_URL` を追加する
+- `docker-compose.yaml` に `db-test` コンテナを追加し、`api` サービスに `TEST_DATABASE_URL` を追加する
 
 ```yaml
-# docker-compose.dev.yaml に追加・変更
+# docker-compose.yaml に追加・変更
 db-test:
   image: postgres:18.1
   environment:

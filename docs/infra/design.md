@@ -96,11 +96,11 @@ AWS Lambda（API）    Vercel（Web）
 
 #### ローカル開発
 
-`docker-compose.dev.yaml` の `environment` に直接記述する。
+`docker-compose.yaml` の `environment` に直接記述する。
 
 #### テスト（ローカル）
 
-`docker-compose.dev.yaml` の `api` サービスに `TEST_DATABASE_URL` を追加し、`package.json` のテストスクリプトで `DATABASE_URL` を上書きする（詳細はテスト設計参照）。
+`docker-compose.yaml` の `api` サービスに `TEST_DATABASE_URL` を追加し、`package.json` のテストスクリプトで `DATABASE_URL` を上書きする（詳細はテスト設計参照）。
 
 #### テスト（GitHub Actions）
 

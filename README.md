@@ -14,7 +14,7 @@
 起動順序: `db` → `workspace`（pnpm install 完了）→ `api` → `web`
 
 ```bash
-docker compose -f docker-compose.dev.yaml up
+docker compose up
 ```
 
 ### パッケージの追加
@@ -23,23 +23,23 @@ pnpm の store と node_modules はすべて `workspace` コンテナが管理�
 
 ```bash
 # ルート（api/web 両方で使うもの）
-docker compose -f docker-compose.dev.yaml exec workspace pnpm add -w <package>
+docker compose exec workspace pnpm add -w <package>
 
 # api のみ
-docker compose -f docker-compose.dev.yaml exec workspace pnpm add --filter api <package>
+docker compose exec workspace pnpm add --filter api <package>
 
 # web のみ
-docker compose -f docker-compose.dev.yaml exec workspace pnpm add --filter web <package>
+docker compose exec workspace pnpm add --filter web <package>
 ```
 
 ### Lint / Format（Biome）
 
 ```bash
 # api、webともに Lint と Format を実行
-docker compose -f docker-compose.dev.yaml exec workspace pnpm check
+docker compose exec workspace pnpm check
 
 # 全api、webともに Lint と Format を実行（自動修正）
-docker compose -f docker-compose.dev.yaml exec workspace pnpm check:fix
+docker compose exec workspace pnpm check:fix
 ```
 
 ### テスト（Vitest）
@@ -48,19 +48,19 @@ Vitest ワークスペース構成で api・web 両パッケージのテスト�
 
 ```bash
 # 全パッケージのテストを実行
-docker compose -f docker-compose.dev.yaml exec workspace pnpm test
+docker compose exec workspace pnpm test
 
 # api のみ
-docker compose -f docker-compose.dev.yaml exec workspace pnpm exec vitest run --project api
+docker compose exec workspace pnpm exec vitest run --project api
 
 # web のみ
-docker compose -f docker-compose.dev.yaml exec workspace pnpm exec vitest run --project web
+docker compose exec workspace pnpm exec vitest run --project web
 
 # ファイル変更を監視して自動再実行（開発中）
-docker compose -f docker-compose.dev.yaml exec workspace pnpm test:watch
+docker compose exec workspace pnpm test:watch
 
 # カバレッジ計測（packages/*/coverage/index.html に出力）
-docker compose -f docker-compose.dev.yaml exec workspace pnpm test:coverage
+docker compose exec workspace pnpm test:coverage
 ```
 
 テストファイルは対象コードと同じディレクトリに配置します（コロケーション）。
@@ -74,16 +74,16 @@ docker compose -f docker-compose.dev.yaml exec workspace pnpm test:coverage
 
 ```bash
 # マイグレーションファイルの作成・適用（開発時）
-docker compose -f docker-compose.dev.yaml exec api pnpm --filter api exec prisma migrate dev --name <migration-name>
+docker compose exec api pnpm --filter api exec prisma migrate dev --name <migration-name>
 
 # マイグレーションの適用のみ（本番・CI）
-docker compose -f docker-compose.dev.yaml exec api pnpm --filter api exec prisma migrate deploy
+docker compose exec api pnpm --filter api exec prisma migrate deploy
 
 # Prismaクライアント・Zodスキーマの生成
-docker compose -f docker-compose.dev.yaml exec workspace pnpm --filter api exec prisma generate
+docker compose exec workspace pnpm --filter api exec prisma generate
 
 # Prisma Studio（DB GUIツール）
-docker compose -f docker-compose.dev.yaml exec api pnpm --filter api exec prisma studio
+docker compose exec api pnpm --filter api exec prisma studio
 ```
 
 ### Git フック（Lefthook）
@@ -105,7 +105,7 @@ lefthook install
 
 ```bash
 # コンテナが停止している場合は先に起動する
-docker compose -f docker-compose.dev.yaml up -d workspace
+docker compose up -d workspace
 ```
 
 ## DB設計
