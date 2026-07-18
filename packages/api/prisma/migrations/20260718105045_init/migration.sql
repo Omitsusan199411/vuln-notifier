@@ -60,6 +60,7 @@ CREATE TABLE "vulnerabilities" (
     "llm_summary" TEXT,
     "advisory_url" TEXT,
     "published_at" TIMESTAMP(3),
+    "advisory_updated_at" TIMESTAMP(3),
     "github_advisory_response" JSONB NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,

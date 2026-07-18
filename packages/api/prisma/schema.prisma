@@ -115,6 +115,7 @@ model Vulnerability {
   llmSummary             String?   @map("llm_summary")
   advisoryUrl            String?   @map("advisory_url")
   publishedAt            DateTime? @map("published_at")
+  advisoryUpdatedAt      DateTime? @map("advisory_updated_at")
   githubAdvisoryResponse Json      @map("github_advisory_response")
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")

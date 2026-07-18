@@ -145,6 +145,7 @@
 - 脆弱性の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
 - ユーザーの脆弱性は通知履歴（`GET /users/:user_id/notification-channels/:channel_id/notifications`）経由で参照する。
 - `GET /vulnerabilities` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
+- 既存の GHSA ID でも、GitHub Advisory 側の `updated_at`（`Vulnerability.advisoryUpdatedAt`）が進んでいればレコードを更新し、`llmSummary` を再生成する。
 
 ---
 
@@ -159,6 +160,7 @@
 **備考:**
 - 通知の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
 - `GET /notifications`・`GET /users/:user_id/notification-channels/:channel_id/notifications` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
+- 脆弱性が更新（`advisoryUpdatedAt` の変化）された場合、既に通知済みのユーザーにも再通知する。
 
 ---
 
