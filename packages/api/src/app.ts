@@ -6,7 +6,7 @@ const app = new Hono();
 app.use("*", corsMiddleware);
 
 app.get("/", (c) => {
-	return c.json({ message: "Hello, World" });
+	return c.json({ message: "Hello, Hono!" });
 });
 
 export default app;

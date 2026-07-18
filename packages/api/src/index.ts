@@ -1,6 +1,9 @@
+// Honoアプリケーションのエントリーポイント
+
 import { serve } from "@hono/node-server";
 import app from "@/app.js";
 
+// @hono/node-serverのserveを使う理由
 // ブラウザ
 //   ↓ HTTPリクエスト
 // Node.jsの http.Server（TCP/HTTPプロトコルの処理そのもの。実際にポートをlistenしているのはこの層）
