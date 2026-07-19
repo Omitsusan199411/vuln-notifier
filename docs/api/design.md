@@ -5,6 +5,7 @@
 - [権限レベル定義](#権限レベル定義)
 - [認証](#認証)
 - [エンドポイント一覧](#エンドポイント一覧)
+- [GitHub Advisory連携](#github-advisory連携)
 - [LLM連携](#llm連携)
 - [エラーハンドリング](#エラーハンドリング)
 - [ログ設計](#ログ設計)
@@ -164,6 +165,23 @@
 
 ---
 
+### GitHub Advisory連携
+
+| 項目 | 内容 |
+|---|---|
+| 使用API | GitHub Advisory REST API（`GET /advisories`） |
+| 認証 | 不要（未認証で呼び出し）。ローカル・本番で同一のクライアントを使用し、Fake実装は用意しない |
+| リトライ | 固定間隔・最大1回リトライ、計2回試行、各1秒間隔 |
+| テスト | `GithubAdvisoryClient`自体を使い、内部の`fetch`をモック化する |
+
+```
+infrastructure/clients/github/
+├── AdvisoryClient.ts        # interface
+└── GithubAdvisoryClient.ts  # 実装
+```
+
+---
+
 ### LLM連携
 
 脆弱性の要約（`Vulnerability.llmSummary`）は、バッチ実行（`POST /batches`）のハンドラー内で、GitHub Advisoryから取得した情報をもとに生成する。
@@ -190,7 +208,7 @@
 
 | 項目 | 内容 |
 |---|---|
-| リトライ | 固定間隔・最大2回リトライ（計3回試行）。各試行の間隔は1秒 |
+| リトライ | 固定間隔・最大1回リトライ（計2回試行）。各試行の間隔は1秒 |
 | リトライ後も失敗した場合 | `llmSummary` を `null` のまま保存し、バッチ処理は継続する（要約なしで通知を送る） |
 | バッチ全体を失敗させるか | させない。LLM要約は付加価値であり、脆弱性通知そのものをブロックする理由にはしない |
 
