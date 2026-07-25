@@ -171,13 +171,51 @@
 |---|---|
 | 使用API | GitHub Advisory REST API（`GET /advisories`） |
 | 認証 | 不要（未認証で呼び出し）。ローカル・本番で同一のクライアントを使用し、Fake実装は用意しない |
-| リトライ | 固定間隔・最大1回リトライ、計2回試行、各1秒間隔 |
+| リトライ | 固定間隔・最大1回リトライ、計2回試行、各1秒間隔。対象は fetch 自体の失敗・5xx レスポンスのみ。4xx（レート制限含む）とバリデーション失敗はリトライしない（待っても解消しない性質のエラーのため） |
 | テスト | `GithubAdvisoryClient`自体を使い、内部の`fetch`をモック化する |
 
 ```
-infrastructure/clients/github/
-├── AdvisoryClient.ts        # interface
-└── GithubAdvisoryClient.ts  # 実装
+infrastructure/clients/
+├── AdvisoryClient.ts        # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
+└── github/
+    └── GithubAdvisoryClient.ts  # 実装
+```
+
+**インターフェース設計方針:**
+
+- `AdvisoryClient`インターフェースは、GitHub固有の情報（クエリパラメータ名・レスポンスのJSON構造）を一切含まない。入力（検索条件）・出力（脆弱性データ）とも、このアプリの業務が必要とする形で定義する。
+- 外部APIとの境界では、レスポンスを`unknown`として受け取り、ランタイムバリデーション（Zod）を通してから初めて信頼できる型として扱う。TypeScriptの型はコンパイル時のみのチェックであり、実行時に外部APIが実際にどんなJSONを返すかは保証されないため。
+- ベンダー固有のバリデーションスキーマ・レスポンス構造・フィルタリング方法（例: GitHubの`severity`は「以上」の閾値指定に対応していないため、取得後にクライアント内で絞り込む）は、`GithubAdvisoryClient`の内部に完全に閉じ込める。`AdvisoryClient`インターフェースにもusecase層にも漏らさない。
+- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`AdvisoryClient`インターフェース自体は変更せず、`clients/osv/OsvAdvisoryClient.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
+
+**データフロー（例）:**
+
+```
+GitHub Advisory REST API                    OSV API（将来追加する場合）
+        │                                           │
+        ▼                                           ▼
+     fetch()                                     fetch()
+        │                                           │
+        ▼                                           ▼
+     unknown                                     unknown
+        │                                           │
+        ▼                                           ▼
+GithubAdvisorySchema.parse()          OsvAdvisorySchema.parse()
+   （Zodでランタイム検証）                  （Zodでランタイム検証）
+        │                                           │
+        ▼                                           ▼
+  検証済みのGitHub固有の型              検証済みのOSV固有の型
+        │                                           │
+        ▼                                           ▼
+  GithubAdvisoryClient内で              OsvAdvisoryClient内で
+  AdvisoryResultへ変換                  AdvisoryResultへ変換
+        │                                           │
+        └───────────────────┬───────────────────────┘
+                             ▼
+                   AdvisoryResult[]（ベンダー非依存）
+                             │
+                             ▼
+              usecase・ドメイン層（AdvisoryClientインターフェースのみに依存）
 ```
 
 ---
@@ -629,8 +667,8 @@ packages/api/src/
 │       ├── line/
 │       │   ├── NotificationClient.ts              # interface
 │       │   └── LineNotificationClient.ts
+│       ├── AdvisoryClient.ts                      # interface（ベンダー非依存）
 │       ├── github/
-│       │   ├── AdvisoryClient.ts                  # interface
 │       │   └── GithubAdvisoryClient.ts
 │       └── llm/
 │           ├── SummaryClient.ts                   # interface
