@@ -1,28 +1,30 @@
 FROM node:24-slim AS base
 
+# node:24-slim に既存の node ユーザー(UID 1000)と衝突しないUIDを使う
+RUN useradd -u 1001 -m -s /bin/bash vscode && chown -R vscode:vscode /home/vscode
+
 # pnpm run を介さずワークスペースルートのバイナリを直接実行できるようにする
-ENV PATH=/root/node_modules/.bin/:$PATH
+ENV PATH=/workspace/node_modules/.bin/:$PATH
 
-ENV PNPM_HOME=/root/pnpm
-
-# corepack: package.json の packageManager に従って pnpm を呼び出せるようにする
+# corepack: package.json の packageManager に従って pnpm を呼び出せるようにする（/usr/local/bin書き込みのためrootのうちに実行）
 RUN corepack enable
 
-WORKDIR /root
+# 以降 vscode で実行する。WORKDIRより前に切り替えることで、以降に作られるディレクトリが最初からvscode所有になる
+USER vscode
 
+WORKDIR /workspace
+RUN mkdir -p node_modules
 
 FROM base AS workspace
-# store を ./:/root bind mount 内に置き、再起動後も永続化する
 ENTRYPOINT ["sh", "-c", "pnpm install && sleep infinity"]
 
-
 FROM base AS api
-WORKDIR /root/packages/api
+WORKDIR /workspace/packages/api
 EXPOSE 3001
 ENTRYPOINT ["pnpm", "dev"]
 
 
 FROM base AS web
-WORKDIR /root/packages/web
+WORKDIR /workspace/packages/web
 EXPOSE 3000
 ENTRYPOINT ["pnpm", "dev"]
