@@ -8,7 +8,8 @@
 		"ghcr.io/devcontainers/features/git:1": {}
 	},
 	"mounts": [
-		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
+		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
+		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
 	],
 	"containerEnv": {
 		"GIT_CONFIG_COUNT": "1",

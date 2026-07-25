@@ -1,5 +1,8 @@
 FROM node:24-slim AS base
 
+# git push で SSH 接続するために必要
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client && rm -rf /var/lib/apt/lists/*
+
 # node:24-slim に既存の node ユーザー(UID 1000)と衝突しないUIDを使う
 RUN useradd -u 1001 -m -s /bin/bash vscode && chown -R vscode:vscode /home/vscode
 
