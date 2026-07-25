@@ -1,0 +1,25 @@
+{
+	"name": "vuln-notifier",
+	"dockerComposeFile": "../docker-compose.yaml",
+	"service": "workspace",
+	"workspaceFolder": "/workspace",
+	"features": {
+		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+		"ghcr.io/devcontainers/features/git:1": {}
+	},
+	"mounts": [
+		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
+	],
+	"containerEnv": {
+		"GIT_CONFIG_COUNT": "1",
+		"GIT_CONFIG_KEY_0": "safe.directory",
+		"GIT_CONFIG_VALUE_0": "/workspace",
+		"LANG": "C.UTF-8",
+		"LC_ALL": "C.UTF-8"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": ["biomejs.biome", "Prisma.prisma", "anthropic.claude-code"]
+		}
+	}
+}
