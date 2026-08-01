@@ -10,6 +10,9 @@ CREATE TYPE "batch_status" AS ENUM ('pending', 'running', 'success', 'failed');
 -- CreateEnum
 CREATE TYPE "notification_channel_type" AS ENUM ('line');
 
+-- CreateEnum
+CREATE TYPE "advisory_source" AS ENUM ('github');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -49,7 +52,8 @@ CREATE TABLE "vulnerability_configs" (
 -- CreateTable
 CREATE TABLE "vulnerabilities" (
     "id" TEXT NOT NULL,
-    "ghsa_id" TEXT NOT NULL,
+    "source_advisory_id" TEXT NOT NULL,
+    "advisory_source" "advisory_source" NOT NULL,
     "cve_id" TEXT NOT NULL,
     "ecosystem_id" TEXT NOT NULL,
     "batch_id" TEXT NOT NULL,
@@ -60,8 +64,8 @@ CREATE TABLE "vulnerabilities" (
     "llm_summary" TEXT,
     "advisory_url" TEXT,
     "published_at" TIMESTAMP(3),
-    "advisory_updated_at" TIMESTAMP(3),
-    "github_advisory_response" JSONB NOT NULL,
+    "source_updated_at" TIMESTAMP(3),
+    "source_response" JSONB NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -153,7 +157,7 @@ CREATE INDEX "vulnerabilities_updated_at_idx" ON "vulnerabilities"("updated_at")
 CREATE INDEX "vulnerabilities_batch_id_idx" ON "vulnerabilities"("batch_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "vulnerabilities_ghsa_id_ecosystem_id_package_name_key" ON "vulnerabilities"("ghsa_id", "ecosystem_id", "package_name");
+CREATE UNIQUE INDEX "vulnerabilities_source_advisory_id_ecosystem_id_package_nam_key" ON "vulnerabilities"("source_advisory_id", "ecosystem_id", "package_name");
 
 -- CreateIndex
 CREATE INDEX "batches_trigger_type_executed_at_idx" ON "batches"("trigger_type", "executed_at");

@@ -9,8 +9,9 @@ generator client {
 }
 
 generator zod {
-  provider = "zod-prisma-types"
+  provider = "prisma-zod-generator"
   output   = "../../shared/src/generated"
+  config = "./zod-generator.config.json"
 }
 
 datasource db {
@@ -51,6 +52,13 @@ enum NotificationChannelType {
   line
 
   @@map("notification_channel_type")
+}
+
+// アドバイザリの取得元（将来 osv などを追加予定）
+enum AdvisorySource {
+  github
+
+  @@map("advisory_source")
 }
 
 // ユーザーモデル
@@ -104,7 +112,8 @@ model VulnerabilityConfig {
 
 model Vulnerability {
   id                     String    @id @default(uuid(7))
-  ghsaId                 String    @map("ghsa_id")
+  sourceAdvisoryId       String    @map("source_advisory_id")
+  advisorySource         AdvisorySource @map("advisory_source")
   cveId                  String    @map("cve_id")
   ecosystemId            String    @map("ecosystem_id")
   batchId                String    @map("batch_id")
@@ -115,8 +124,8 @@ model Vulnerability {
   llmSummary             String?   @map("llm_summary")
   advisoryUrl            String?   @map("advisory_url")
   publishedAt            DateTime? @map("published_at")
-  advisoryUpdatedAt      DateTime? @map("advisory_updated_at")
-  githubAdvisoryResponse Json      @map("github_advisory_response")
+  sourceUpdatedAt        DateTime? @map("source_updated_at")
+  sourceResponse         Json      @map("source_response")
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
 
@@ -124,7 +133,7 @@ model Vulnerability {
   batch         Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
   notifications Notification[]
 
-  @@unique([ghsaId, ecosystemId, packageName])
+  @@unique([sourceAdvisoryId, ecosystemId, packageName])
   @@index([updatedAt])
   @@index([batchId])
   @@map("vulnerabilities")
