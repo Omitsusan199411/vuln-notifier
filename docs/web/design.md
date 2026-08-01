@@ -253,25 +253,7 @@ packages/web/src/
 
 #### エラーの表示方法
 
-API は RFC 9457 形式でエラーを返す。フロントは `type` フィールドで分岐する。
-
-```typescript
-onError: (error) => {
-  switch (error.type) {
-    case '/problems/unauthorized':
-      router.push('/auth/signin')
-      break
-    case '/problems/validation-error':
-      // error.errors をフォームにマッピング
-      break
-    case '/problems/forbidden':
-      router.push('/dashboard')
-      break
-    default:
-      toast.error(error.title)
-  }
-}
-```
+API は RFC 9457 形式でエラーを返す。フロントは TanStack Query の `onError` で、レスポンスの `type` フィールドを見て以下の表の通りに分岐する。
 
 | エラー種別 | `type` | HTTP ステータス | 表示方法 |
 |---|---|---|---|

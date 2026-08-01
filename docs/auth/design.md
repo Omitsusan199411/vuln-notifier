@@ -52,30 +52,7 @@
 - **保存場所**: HTTP-only Cookie（XSS対策）
 - **内容**: Cognito ID トークンをセッションに含めて保持
 
-```typescript
-// auth.ts（Auth.js 設定）
-export const { auth, signIn, signOut } = NextAuth({
-  providers: [
-    Cognito({
-      clientId: process.env.COGNITO_CLIENT_ID,
-      clientSecret: process.env.COGNITO_CLIENT_SECRET,
-      issuer: process.env.COGNITO_ISSUER,
-    })
-  ],
-  session: { strategy: 'jwt' },
-  callbacks: {
-    jwt({ token, account }) {
-      // ID トークンをセッションに保持
-      if (account) token.idToken = account.id_token
-      return token
-    },
-    session({ session, token }) {
-      session.idToken = token.idToken
-      return session
-    }
-  }
-})
-```
+Auth.js の Cognito プロバイダーを使い、`session: { strategy: 'jwt' }` を指定する。`jwt` コールバックでサインイン時に受け取った ID トークンを JWT に保持し、`session` コールバックでそれをセッションオブジェクトに引き渡すことで、以降どこからでも `session.idToken` としてアクセスできるようにする。
 
 ---
 
@@ -83,18 +60,7 @@ export const { auth, signIn, signOut } = NextAuth({
 
 Hono API には **ID トークン**を渡す。ID トークンには `cognitoSub`・`cognito:groups` が含まれており、ユーザー識別と管理者判定を同時に行える。
 
-```typescript
-// lib/api.ts
-import { auth } from '@/lib/auth'
-
-const session = await auth()
-
-export const apiClient = hc<AppType>(process.env.API_URL!, {
-  headers: {
-    Authorization: `Bearer ${session?.idToken}`
-  }
-})
-```
+Hono RPC クライアント（`hc`）の生成時に、Auth.js のセッションから取り出した `idToken` を `Authorization: Bearer` ヘッダーとして付与する。
 
 ---
 
@@ -109,23 +75,7 @@ export const apiClient = hc<AppType>(process.env.API_URL!, {
 
 **フロントエンドの認可:**
 
-`middleware.ts` でパスのプレフィックスを見て認可を制御する。
-
-```typescript
-// middleware.ts
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
-  const session = // セッション取得
-
-  if (path.startsWith('/admin') && !isAdmin(session)) {
-    return NextResponse.redirect('/dashboard')
-  }
-
-  if (!path.startsWith('/auth') && !session) {
-    return NextResponse.redirect('/auth/signin')
-  }
-}
-```
+`middleware.ts` でパスのプレフィックスを見て認可を制御する。`/admin` 配下は管理者判定に失敗したら `/dashboard` へ、未認証で `/auth` 以外にアクセスしたら `/auth/signin` へリダイレクトする。
 
 ---
 
@@ -144,17 +94,7 @@ ID トークン漏洩     → 最大 1時間で無効 ← 許容範囲
 リフレッシュトークン漏洩 → デフォルト 30日間有効 ← 危険
 ```
 
-リフレッシュトークンはサインアウト時に必ず無効化する。Auth.js のサインアウト処理に `RevokeToken` を組み込む。
-
-```typescript
-// auth.ts
-events: {
-  async signOut({ token }) {
-    // サインアウト時にリフレッシュトークンを Cognito で無効化
-    await revokeToken(token.refreshToken)
-  }
-}
-```
+リフレッシュトークンはサインアウト時に必ず無効化する。Auth.js の `signOut` イベントで Cognito の `RevokeToken` API を呼び出す。
 
 ---
 

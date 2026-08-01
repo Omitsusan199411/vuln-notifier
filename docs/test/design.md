@@ -24,86 +24,15 @@
 
 - テスト用 DB コンテナを開発用 DB と分離する（データが混ざらない疎結合）
 - `.env` ファイルは使用しない。環境変数は docker-compose / GitHub Actions で管理する
-- `docker-compose.yaml` に `db-test` コンテナを追加し、`api` サービスに `TEST_DATABASE_URL` を追加する
-
-```yaml
-# docker-compose.yaml に追加・変更
-db-test:
-  image: postgres:18.1
-  environment:
-    POSTGRES_USER: vuln
-    POSTGRES_PASSWORD: password
-    POSTGRES_DB: vuln_test
-  ports:
-    - "5433:5432"  # 開発用DB（5480）と分ける
-
-api:
-  environment:
-    DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
-    TEST_DATABASE_URL: postgresql://vuln:password@db-test:5432/vuln_test
-```
-
-ルートの `package.json` のテストスクリプトで `DATABASE_URL` を上書きする：
-
-```json
-"test": "DATABASE_URL=$TEST_DATABASE_URL vitest run"
-```
-
-コンテナ内で `pnpm test` を実行するだけでテスト用 DB に切り替わる。
-
-**GitHub Actions:**
-
-```yaml
-jobs:
-  test:
-    services:
-      db-test:
-        image: postgres:18.1
-        env:
-          POSTGRES_USER: vuln
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: vuln_test
-        ports:
-          - 5432:5432
-    env:
-      DATABASE_URL: postgresql://vuln:password@localhost:5432/vuln_test
-    steps:
-      - run: pnpm test
-```
+- `docker-compose.yaml`（実ファイル参照）に開発用 DB とは別ポートの `db-test` コンテナを追加し、`api` サービスに `TEST_DATABASE_URL` を追加する
+- ルートの `package.json` のテストスクリプトで、実行時に `DATABASE_URL` を `TEST_DATABASE_URL` の値へ上書きする。コンテナ内で `pnpm test` を実行するだけでテスト用 DB に切り替わる
+- GitHub Actions では `services` として同じ `db-test` イメージを起動し、`DATABASE_URL` をそのサービスに向けた値で `env` に直接渡す
 
 #### テストデータのクリーンアップ
 
-**TRUNCATE CASCADE** を採用する。
+**TRUNCATE CASCADE** を採用する。Prisma のモデル一覧（`Prisma.ModelName`）から対象テーブルを動的に組み立てて `TRUNCATE ... RESTART IDENTITY CASCADE` を発行する方針とする。こうすることで、`schema.prisma` にモデルを追加した際も対象テーブルの一覧を手動更新せずに済み、かつアプリ外のテーブル（拡張機能・手動作成テーブル等）を誤って削除しない。
 
-```typescript
-// packages/api/src/tests/helpers/cleanDatabase.ts
-import { Prisma, PrismaClient } from '@prisma/client'
-
-export async function cleanDatabase(prisma: PrismaClient) {
-  // Prisma が管理するモデルのみを対象にする
-  // → アプリ外のテーブル（拡張機能・手動作成テーブル等）を誤って削除しない
-  // → schema.prisma にモデルを追加すれば自動で対応される
-  const modelNames = Object.values(Prisma.ModelName)
-  const tableNames = modelNames.map(name => `"${name}"`).join(', ')
-
-  await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE`
-  )
-}
-```
-
-```typescript
-// vitest.setup.ts
-import { cleanDatabase } from './helpers/cleanDatabase'
-
-beforeAll(async () => {
-  await exec('prisma migrate deploy')  // マイグレーション適用
-})
-
-afterEach(async () => {
-  await cleanDatabase(prisma)  // 各テスト後にクリーンアップ
-})
-```
+テスト実行前（`beforeAll`）にマイグレーションを適用し、各テスト後（`afterEach`）にクリーンアップを行う。
 
 **TRUNCATE CASCADE を選ぶ理由：**
 - `deleteMany` の順次実行より高速（単一 SQL 文）

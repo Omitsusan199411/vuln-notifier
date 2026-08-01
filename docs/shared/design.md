@@ -67,7 +67,4 @@ packages/shared/
 
 ### 使い方
 
-```typescript
-// Zod スキーマ・TypeScript 型（全クライアント共通）
-import { VulnerabilityConfigSchema, Severity } from '@repo/shared'
-```
+API・Webいずれのクライアントも、Zodスキーマ・TypeScript型は`@repo/shared`から直接importする（例: `VulnerabilityConfigSchema`、`Severity`）。

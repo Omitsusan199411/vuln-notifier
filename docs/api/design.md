@@ -146,7 +146,7 @@
 - 脆弱性の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
 - ユーザーの脆弱性は通知履歴（`GET /users/:user_id/notification-channels/:channel_id/notifications`）経由で参照する。
 - `GET /vulnerabilities` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
-- 既存の GHSA ID でも、GitHub Advisory 側の `updated_at`（`Vulnerability.advisoryUpdatedAt`）が進んでいればレコードを更新し、`llmSummary` を再生成する。
+- 既存のアドバイザリ（`Vulnerability.sourceAdvisoryId`）でも、取得元の `updated_at`（`Vulnerability.sourceUpdatedAt`）が進んでいればレコードを更新し、`llmSummary` を再生成する。
 
 ---
 
@@ -161,7 +161,7 @@
 **備考:**
 - 通知の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
 - `GET /notifications`・`GET /users/:user_id/notification-channels/:channel_id/notifications` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
-- 脆弱性が更新（`advisoryUpdatedAt` の変化）された場合、既に通知済みのユーザーにも再通知する。
+- 脆弱性が更新（`sourceUpdatedAt` の変化）された場合、既に通知済みのユーザーにも再通知する。
 
 ---
 
@@ -175,18 +175,21 @@
 | テスト | `GithubAdvisoryClient`自体を使い、内部の`fetch`をモック化する |
 
 ```
-infrastructure/clients/
-├── AdvisoryClient.ts        # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
-└── github/
-    └── GithubAdvisoryClient.ts  # 実装
+usecases/ports/
+└── VulnerabilityProvider.ts # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
+
+infrastructure/clients/github/
+└── GithubAdvisoryClient.ts  # 実装
 ```
 
 **インターフェース設計方針:**
 
-- `AdvisoryClient`インターフェースは、GitHub固有の情報（クエリパラメータ名・レスポンスのJSON構造）を一切含まない。入力（検索条件）・出力（脆弱性データ）とも、このアプリの業務が必要とする形で定義する。
+- ポートのインターフェース名は`AdvisoryClient`ではなく`VulnerabilityProvider`とする。usecase層が必要としているのは「脆弱性データを取得する能力」であり、「どう取得するか（HTTPクライアントとして呼ぶ）」という実装都合の言葉（Client）をポートの名前に持ち込まない。一方、実装クラス（`GithubAdvisoryClient`）は実際にHTTP通信を行うクラスなので`Client`という言葉が適切。
+- `VulnerabilityProvider`インターフェースは、GitHub固有の情報（クエリパラメータ名・レスポンスのJSON構造）を一切含まない。入力（検索条件）・出力（脆弱性データ）とも、このアプリの業務が必要とする形で定義する。
 - 外部APIとの境界では、レスポンスを`unknown`として受け取り、ランタイムバリデーション（Zod）を通してから初めて信頼できる型として扱う。TypeScriptの型はコンパイル時のみのチェックであり、実行時に外部APIが実際にどんなJSONを返すかは保証されないため。
-- ベンダー固有のバリデーションスキーマ・レスポンス構造・フィルタリング方法（例: GitHubの`severity`は「以上」の閾値指定に対応していないため、取得後にクライアント内で絞り込む）は、`GithubAdvisoryClient`の内部に完全に閉じ込める。`AdvisoryClient`インターフェースにもusecase層にも漏らさない。
-- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`AdvisoryClient`インターフェース自体は変更せず、`clients/osv/OsvAdvisoryClient.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
+- ベンダー固有のバリデーションスキーマ・レスポンス構造・フィルタリング方法（例: GitHubの`severity`は「以上」の閾値指定に対応していないため、取得後にクライアント内で絞り込む）は、`GithubAdvisoryClient`の内部に完全に閉じ込める。`VulnerabilityProvider`インターフェースにもusecase層にも漏らさない。
+- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`VulnerabilityProvider`インターフェース自体は変更せず、`clients/osv/OsvAdvisoryClient.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
+- `Vulnerability`モデルの識別子・生レスポンス関連フィールドも同じ理由でベンダー中立な命名にしている（`ghsaId`ではなく`sourceAdvisoryId`＋`advisorySource`、`advisoryUpdatedAt`ではなく`sourceUpdatedAt`、`githubAdvisoryResponse`ではなく`sourceResponse`）。「advisory」という言葉自体はGitHub固有ではなく業界共通の概念（ベンダーが公開する脆弱性文書）なので残すが、「GitHub」「GHSA」のようなベンダー固有語は含めない。
 
 **データフロー（例）:**
 
@@ -208,14 +211,14 @@ GithubAdvisorySchema.parse()          OsvAdvisorySchema.parse()
         │                                           │
         ▼                                           ▼
   GithubAdvisoryClient内で              OsvAdvisoryClient内で
-  AdvisoryResultへ変換                  AdvisoryResultへ変換
+  VulnerabilityCandidateへ変換          VulnerabilityCandidateへ変換
         │                                           │
         └───────────────────┬───────────────────────┘
                              ▼
-                   AdvisoryResult[]（ベンダー非依存）
+              VulnerabilityCandidate[]（ベンダー非依存）
                              │
                              ▼
-              usecase・ドメイン層（AdvisoryClientインターフェースのみに依存）
+           usecase・ドメイン層（VulnerabilityProviderインターフェースのみに依存）
 ```
 
 ---
@@ -239,7 +242,7 @@ GithubAdvisorySchema.parse()          OsvAdvisorySchema.parse()
 
 | 項目 | 内容 |
 |---|---|
-| 入力 | `Vulnerability.githubAdvisoryResponse`（GitHub Advisory APIのレスポンスをそのまま渡す。特定フィールドの抽出は行わない） |
+| 入力 | `Vulnerability.sourceResponse`（GitHub Advisory APIのレスポンスをそのまま渡す。特定フィールドの抽出は行わない） |
 | 出力 | プレーンテキストの要約文字列（`llmSummary` は `String?` のため、構造化出力は採用しない） |
 
 #### エラーハンドリング
@@ -268,41 +271,13 @@ GithubAdvisorySchema.parse()          OsvAdvisorySchema.parse()
 
 Amazon Bedrock自体には、コスト（$）に対するネイティブなハード上限機能は存在しない（AWS Budgetsのアラートは請求データ由来で遅延があり、リアルタイムに呼び出しを止められない）。そのため、アプリケーション層で月間の使用量を自前管理し、呼び出し前に同期的にチェックする方式を採る。
 
-**テーブル設計:**
-
-```prisma
-model LlmMonthlyUsage {
-  id           String   @id @default(nanoid())
-  year         Int
-  month        Int      // 1〜12
-  inputTokens  Int      @default(0) @map("input_tokens")
-  outputTokens Int      @default(0) @map("output_tokens")
-  costUsd      Decimal  @default(0) @map("cost_usd")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@unique([year, month])
-  @@map("llm_monthly_usages")
-}
-```
+**テーブル設計:** `LlmMonthlyUsage`モデル（`year`・`month`・`inputTokens`・`outputTokens`・`costUsd`を`[year, month]`でユニーク制約、詳細は実ファイル`packages/api/prisma/schema.prisma`を参照）。
 
 **`year`/`month`を個別の`Int`型にする理由:** 月次データを`DATE`型（月初日を格納）で表現する方法も検討したが、「月初日をどう作るか」の実装がタイムゾーン依存になりやすい（ローカルタイムゾーンの`getFullYear()`/`getMonth()`を使うと、UTC変換時に日付が前後にずれ、月をまたぐタイミングで集計が混線するバグを生みやすい）。`year`/`month`を個別の`Int`型にすることで、そもそも「日」を扱わないため、この種のタイムゾーンバグが構造的に発生しない。
 
 **トークン数・コストの取得方法:** 別途トークナイザーは使用しない。BedrockのInvokeModelレスポンスに含まれる`usage.input_tokens`/`usage.output_tokens`の実測値をそのまま加算する。
 
-**更新方法:** Prismaの`increment`を使い、DB側でアトミックに加算する（並列実行数3の同時書き込みでも取りこぼしが起きないようにするため）。
-
-```typescript
-await prisma.llmMonthlyUsage.upsert({
-  where: { year_month: { year, month } },
-  create: { year, month, inputTokens, outputTokens, costUsd },
-  update: {
-    inputTokens: { increment: inputTokens },
-    outputTokens: { increment: outputTokens },
-    costUsd: { increment: costUsd },
-  },
-})
-```
+**更新方法:** Prismaの`upsert`＋`increment`を使い、レコードが無ければ作成・あればDB側でアトミックに加算する（並列実行数3の同時書き込みでも取りこぼしが起きないようにするため）。
 
 **予算チェックの置き場所:** `SummaryClient`の実装（`BedrockSummaryClient`）ではなく、usecase層で`summaryClient.summarize()`を呼ぶ前にチェックする。予算管理はLLM呼び出し手段（Bedrockかどうか）とは独立した関心事であり、`SummaryClient`に混ぜると`FakeSummaryClient`にも同じロジックの重複実装が必要になるほか、「予算超過」と「呼び出し失敗」が戻り値だけで区別できなくなるため。
 
@@ -310,15 +285,17 @@ await prisma.llmMonthlyUsage.upsert({
 
 #### アーキテクチャ
 
-既存の`infrastructure/clients/`のパターン（`github/AdvisoryClient.ts`、`line/NotificationClient.ts`）に倣う。
+契約（port）はusecase層、実装はinfrastructure層に置く（`usecases/ports/VulnerabilityProvider.ts`と同じパターン）。
 
 ```
+usecases/ports/
+└── SummaryClient.ts        # interface
+
 infrastructure/clients/llm/
-├── SummaryClient.ts        # interface
 └── BedrockSummaryClient.ts # Bedrock実装（東京リージョン）
 ```
 
-usecase層は`SummaryClient`インターフェースにのみ依存し、Bedrockという具体的な実装を知らない（依存性逆転の原則）。テストでは`FakeSummaryClient`を注入する。
+usecase層は`SummaryClient`インターフェースのみをimportし、`BedrockSummaryClient`は直接importしない。具象の生成はroutes層（composition root）で行う。テストでは`FakeSummaryClient`を注入する。
 
 ---
 
@@ -553,43 +530,15 @@ Prisma が投げる例外を適切な HTTP ステータスコードに変換す�
 
 #### マスキング設定
 
-```typescript
-const logger = pino({
-  redact: [
-    'req.headers.authorization',
-    'req.headers.cookie',
-    '*.lineUserId',
-  ]
-})
-```
+Pinoの`redact`オプションで、リクエストの認証ヘッダー（`req.headers.authorization`）・Cookie（`req.headers.cookie`）・LINEのユーザーID（`*.lineUserId`、ネストしたどの階層でも一致）をマスクする（実装は`packages/api/src/lib/logger.ts`を参照）。
 
-**開発規約:** センシティブ情報は必ずオブジェクトフィールドとして渡す。文字列への直接埋め込みは禁止。
-
-```typescript
-// ❌ 禁止
-logger.info(`LINE通知送信: lineUserId=${lineUserId}`)
-
-// ✅ 推奨
-logger.info({ lineUserId }, 'LINE通知送信')
-```
+**開発規約:** センシティブ情報は必ずオブジェクトフィールドとして渡す（`logger.info({ lineUserId }, 'メッセージ')`）。文字列への直接埋め込み（テンプレートリテラルでの埋め込み等）は、`redact`によるマスキングが効かなくなるため禁止。
 
 ---
 
 ### CORS 設定
 
-Hono の組み込み CORS ミドルウェア（`hono/cors`）を使用する。
-
-```typescript
-// src/middleware/cors.ts
-cors({
-  origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
-  allowHeaders: ["Authorization", "Content-Type"],
-  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  exposeHeaders: ["Content-Length"],
-  maxAge: 600,
-  credentials: true,
-})
-```
+Hono の組み込み CORS ミドルウェア（`hono/cors`）を使用する（実装は`packages/api/src/middleware/cors.ts`を参照）。設定意図は以下の通り。
 
 | 設定 | 値 | 理由 |
 |---|---|---|
@@ -634,6 +583,11 @@ packages/api/src/
 │       └── VulnerabilityConfigRepository.ts
 │
 ├── usecases/
+│   ├── ports/                                     # port = usecaseが外部の技術に要求する契約（interface）
+│   │   ├── VulnerabilityProvider.ts
+│   │   ├── VulnerabilityProvider.types.ts
+│   │   ├── NotificationClient.ts
+│   │   └── SummaryClient.ts
 │   ├── batch/
 │   │   ├── runBatchManual.ts
 │   │   ├── runBatchManual.test.ts                 # コロケーション
@@ -663,15 +617,12 @@ packages/api/src/
 │   │   │   └── PrismaNotificationChannelRepository.ts
 │   │   └── vulnerabilityConfig/
 │   │       └── PrismaVulnerabilityConfigRepository.ts
-│   └── clients/                                   # 技術ベース
+│   └── clients/                                   # 技術ベース（portの実装のみ）
 │       ├── line/
-│       │   ├── NotificationClient.ts              # interface
 │       │   └── LineNotificationClient.ts
-│       ├── AdvisoryClient.ts                      # interface（ベンダー非依存）
 │       ├── github/
 │       │   └── GithubAdvisoryClient.ts
 │       └── llm/
-│           ├── SummaryClient.ts                   # interface
 │           └── BedrockSummaryClient.ts
 │
 ├── lib/
@@ -696,6 +647,16 @@ packages/api/src/
     └── index.ts
 ```
 
+**型の配置方針:**
+
+優先順位: ① `@repo/shared`（`zod-prisma-types`生成）の型を使う → ② 表現できない型のみ、各ファイルと同居する`*.types.ts`で独自定義する。
+
+| 型の種類 | 置き場所 | 理由 |
+|---|---|---|
+| ドメインエンティティ | `@repo/shared`の型をそのまま使う（domainで再定義しない） | Prisma schemaがSingle Source of Truthのため |
+| Repository interface | `domain/` | エンティティに不可分な契約（例: Userはidで検索できる） |
+| Client interface（外部API等の技術。= port） | `usecases/ports/` | 特定usecaseが要求する技術的能力。entityの本質ではない |
+
 **`schema/` と `packages/shared/schema/` の使い分け:**
 
 | 置き場所 | 対象 | 理由 |
@@ -703,19 +664,13 @@ packages/api/src/
 | `packages/shared/src/schema/` | リクエストボディのバリデーション（POST・PUT） | Web のフォームバリデーションと共有するため |
 | `packages/api/src/schema/` | クエリパラメータ等の API 固有のバリデーション | Web では不要なため |
 
-```typescript
-// packages/api/src/schema/pagination.ts（API固有）
-export const paginationSchema = z.object({
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(20),
-})
-```
+例: `packages/api/src/schema/pagination.ts`では、`page`（1以上、デフォルト1）・`limit`（1〜100、デフォルト20）をこの層でバリデーションする。
 
 **依存の方向：**
 ```
-routes → usecases → domain（entity + Repository interface）
+routes → usecases（usecase + ports） → domain（entity + Repository interface）
                         ↑
-              infrastructure（Prisma実装・外部クライアント実装）
+              infrastructure（Prisma実装・port実装）
 ```
 
 ---

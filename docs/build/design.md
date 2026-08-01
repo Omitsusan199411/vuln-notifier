@@ -20,25 +20,7 @@ Prisma から自動生成された Zod スキーマを提供するパッケー�
 
 ### package.json
 
-```json
-{
-  "name": "@repo/shared",
-  "type": "module",
-  "exports": {
-    ".": {
-      "source": "./src/index.ts",  // 使用場面（開発環境）: turbo dev（tsx watch）→ tsx が認識、dist/ 不要で .ts を直接実行
-      "types": "./src/index.ts",   // 使用場面（CI環境）: CI の tsc --noEmit / IDE の型補完 → dist/ 不要で .ts から型を解決
-      "import": "./dist/index.js"  // 使用場面（本番環境）: turbo build 後の本番起動（node dist/index.js）→ Node.js が .js を実行
-    }
-  },
-  "scripts": {
-    "build": "tsc"
-  },
-  "dependencies": {
-    "zod": "catalog:"
-  }
-}
-```
+`exports` フィールドに3種類の条件（`source` / `types` / `import`）を定義し、呼び出し元の実行環境ごとに参照先を切り替える（詳細は実ファイル `packages/shared/package.json` を参照）。
 
 **exports の条件分岐**
 
@@ -92,60 +74,13 @@ Node.js 素（本番）:      source/types なし → import にフォールバ�
 
 ### tsconfig.json
 
-```json
-{
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
-}
-```
+`module`/`moduleResolution` は `NodeNext` を採用する（詳細は実ファイル `packages/shared/tsconfig.json` を参照）。`module: NodeNext` では import 指定子にコンパイル後の拡張子（`.js`）を書く必要があるため、ソースは `.ts` でも import 文は `.js` で書く。
 
 ### src/index.ts（バレルファイル）
 
-```ts
-export * from './generated/index.js'
-```
+`src/index.ts` は shared の公開 API の窓口であり、`generated/` 配下を re-export する。外部（api・web）は常に `@repo/shared` からのみ import する方針とし、`@repo/shared/src/generated/...` のような内部パスへの直接 import は禁止する。直接パスを import すると、shared の内部構造を変更した時に api・web 側も修正が必要になり、バレルファイルを設けた意味が失われるため。
 
-`module: NodeNext` では import 指定子にコンパイル後の拡張子（`.js`）を書く必要があるため、ソースは `.ts` でも import 文は `.js` で書きます。
-
-`src/index.ts` は shared の公開 API の窓口です。外部（api・web）は常に `@repo/shared` からのみ import します。
-
-**新しいファイルを追加する時**
-
-shared に新しいファイルを追加した場合、`src/index.ts` に1行追加します。
-
-```ts
-export * from './generated/index.js'
-export * from './validators/index.js'  // 追加
-```
-
-外部の import パスは変わりません。
-
-```ts
-// api・web 側（変更不要）
-import { UserSchema, SomeValidator } from '@repo/shared'
-```
-
-**外部から直接パスを import しない**
-
-```ts
-// ❌ 内部構造に依存する（やらない）
-import { UserSchema } from '@repo/shared/src/generated/index.ts'
-
-// ✅ バレルファイル経由（これだけ使う）
-import { UserSchema } from '@repo/shared'
-```
-
-直接パスを import すると、shared の内部構造を変更した時に api・web 側も修正が必要になります。
+shared に新しいファイルを追加した場合は、`src/index.ts` に re-export を1行追加する。外部からの import パス（`@repo/shared`）自体は変わらない。
 
 ---
 
@@ -172,48 +107,13 @@ node dist/index.js  # 起動
 
 ### tsconfig.json
 
-```json
-{
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": ["node"],
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "exclude": ["node_modules"]
-}
-```
+（詳細は実ファイル `packages/api/tsconfig.json` を参照）
 
 project references は不要です。Turborepo が shared → api のビルド順序を保証します。
 
 `rootDir` を明示しているのは、`@repo/shared` を参照することで `tsc` の rootDir 自動推論が `packages/shared/src` まで広がり、`dist/` の出力構造が崩れるのを防ぐためです。
 
 ### package.json
-
-```json
-{
-  "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "typeCheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@repo/shared": "workspace:*"
-  },
-  "devDependencies": {
-    "tsx": "^4.x.x"
-  }
-}
-```
 
 本番起動は `node dist/index.js` のため tsx は不要です。tsx は開発時のみ使用するため `devDependencies` に配置します。
 
@@ -233,16 +133,6 @@ web は tsc でビルドしません。`next build` が webpack を通じて Typ
 
 ### next.config.ts
 
-```ts
-const nextConfig = {
-  transpilePackages: ['@repo/shared'],
-  webpack: (config) => {
-    config.resolve.conditionNames = ['source', ...config.resolve.conditionNames]
-    return config
-  },
-}
-```
-
 `transpilePackages` で「@repo/shared だけは TypeScript としてコンパイルしてください」と指示します。
 
 `webpack.conditionNames` に `source` を追加することで、`next dev` 時に webpack が shared の `source` 条件（`./src/index.ts`）を認識できます。これがないと webpack は `import` 条件（`./dist/index.js`）を探しますが、開発時は `dist/` が存在しないためエラーになります。
@@ -251,19 +141,7 @@ const nextConfig = {
 
 ### package.json
 
-```json
-{
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "type:check": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@repo/shared": "workspace:*"
-  }
-}
-```
+（詳細は実ファイル `packages/web/package.json` を参照）
 
 ---
 
@@ -331,19 +209,4 @@ pnpm --filter api deploy /prod/api
 
 ### Dockerfile（api）
 
-```dockerfile
-# ビルドステージ
-FROM node:24-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN pnpm install --frozen-lockfile
-RUN pnpm --filter api exec prisma generate
-RUN turbo run build --filter=api...
-RUN pnpm --filter api deploy /prod/api
-
-# 実行ステージ
-FROM node:24-alpine AS runner
-WORKDIR /app
-COPY --from=builder /prod/api .
-CMD ["node", "dist/index.js"]
-```
+マルチステージビルドを採用する。ビルドステージ（`node:24-alpine`）で依存関係のインストール・`prisma generate`・`turbo run build`・`pnpm deploy`によるスタンドアロン化までを行い、実行ステージでは前段の`/prod/api`の中身だけをコピーして`node dist/index.js`で起動する。ビルド専用の依存関係やソース全体を実行イメージに含めないため、イメージサイズを抑えられる。
