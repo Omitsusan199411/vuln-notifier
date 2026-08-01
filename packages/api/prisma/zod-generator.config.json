@@ -2,6 +2,7 @@
 	"mode": "custom",
 	"pureModels": true,
 	"useMultipleFiles": false,
+	"decimalMode": "number",
 	"variants": {
 		"pure": { "enabled": true },
 		"input": { "enabled": false },
