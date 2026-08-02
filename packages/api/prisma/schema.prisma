@@ -118,13 +118,13 @@ model Vulnerability {
   ecosystemId            String    @map("ecosystem_id")
   batchId                String    @map("batch_id")
   packageName            String    @map("package_name")
-  severity               Severity?
-  cvssScore              Decimal   @map("cvss_score") @db.Decimal(3, 1)
-  summary                String?
+  severity               Severity
+  cvssScore              Decimal?  @map("cvss_score") @db.Decimal(3, 1)
+  summary                String
   llmSummary             String?   @map("llm_summary")
-  advisoryUrl            String?   @map("advisory_url")
-  publishedAt            DateTime? @map("published_at")
-  sourceUpdatedAt        DateTime? @map("source_updated_at")
+  advisoryUrl            String    @map("advisory_url")
+  publishedAt            DateTime  @map("published_at")
+  sourceUpdatedAt        DateTime  @map("source_updated_at")
   sourceResponse         Json      @map("source_response")
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
