@@ -176,19 +176,22 @@
 
 ```
 usecases/ports/
-└── VulnerabilityProvider.ts # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
+├── SecurityAdvisoriesProvider.ts       # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
+└── SecurityAdvisoriesProvider.types.ts # 入出力の型（SecurityAdvisoriesSearchParams・ConvertedVulnerability）
 
 infrastructure/clients/github/
-└── GithubAdvisoryClient.ts  # 実装
+├── GithubAdvisoryClient.ts      # 実装
+├── GithubAdvisoryClient.type.ts # GitHub固有の生レスポンス型（GithubAdvisorySchemaから導出）
+└── GithubAdvisorySchema.ts      # GitHub固有の生レスポンスを検証するZodスキーマ
 ```
 
 **インターフェース設計方針:**
 
-- ポートのインターフェース名は`AdvisoryClient`ではなく`VulnerabilityProvider`とする。usecase層が必要としているのは「脆弱性データを取得する能力」であり、「どう取得するか（HTTPクライアントとして呼ぶ）」という実装都合の言葉（Client）をポートの名前に持ち込まない。一方、実装クラス（`GithubAdvisoryClient`）は実際にHTTP通信を行うクラスなので`Client`という言葉が適切。
-- `VulnerabilityProvider`インターフェースは、GitHub固有の情報（クエリパラメータ名・レスポンスのJSON構造）を一切含まない。入力（検索条件）・出力（脆弱性データ）とも、このアプリの業務が必要とする形で定義する。
+- ポートのインターフェース名は`AdvisoryClient`ではなく`SecurityAdvisoriesProvider`とする。usecase層が必要としているのは「脆弱性データを取得する能力」であり、「どう取得するか（HTTPクライアントとして呼ぶ）」という実装都合の言葉（Client）をポートの名前に持ち込まない。一方、実装クラス（`GithubAdvisoryClient`）は実際にHTTP通信を行うクラスなので`Client`という言葉が適切。
+- `SecurityAdvisoriesProvider`インターフェースは、GitHub固有の情報（クエリパラメータ名・レスポンスのJSON構造）を一切含まない。入力（検索条件）・出力（脆弱性データ）とも、このアプリの業務が必要とする形で定義する。
 - 外部APIとの境界では、レスポンスを`unknown`として受け取り、ランタイムバリデーション（Zod）を通してから初めて信頼できる型として扱う。TypeScriptの型はコンパイル時のみのチェックであり、実行時に外部APIが実際にどんなJSONを返すかは保証されないため。
-- ベンダー固有のバリデーションスキーマ・レスポンス構造・フィルタリング方法（例: GitHubの`severity`は「以上」の閾値指定に対応していないため、取得後にクライアント内で絞り込む）は、`GithubAdvisoryClient`の内部に完全に閉じ込める。`VulnerabilityProvider`インターフェースにもusecase層にも漏らさない。
-- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`VulnerabilityProvider`インターフェース自体は変更せず、`clients/osv/OsvAdvisoryClient.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
+- ベンダー固有のバリデーションスキーマ・レスポンス構造・フィルタリング方法（例: GitHubの`severity`は「以上」の閾値指定に対応していないため、取得後にクライアント内で絞り込む）は、`GithubAdvisoryClient`の内部に完全に閉じ込める。`SecurityAdvisoriesProvider`インターフェースにもusecase層にも漏らさない。
+- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`SecurityAdvisoriesProvider`インターフェース自体は変更せず、`clients/osv/OsvAdvisoryClient.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
 - `Vulnerability`モデルの識別子・生レスポンス関連フィールドも同じ理由でベンダー中立な命名にしている（`ghsaId`ではなく`sourceAdvisoryId`＋`advisorySource`、`advisoryUpdatedAt`ではなく`sourceUpdatedAt`、`githubAdvisoryResponse`ではなく`sourceResponse`）。「advisory」という言葉自体はGitHub固有ではなく業界共通の概念（ベンダーが公開する脆弱性文書）なので残すが、「GitHub」「GHSA」のようなベンダー固有語は含めない。
 
 **データフロー（例）:**
@@ -211,14 +214,14 @@ GithubAdvisorySchema.parse()          OsvAdvisorySchema.parse()
         │                                           │
         ▼                                           ▼
   GithubAdvisoryClient内で              OsvAdvisoryClient内で
-  VulnerabilityCandidateへ変換          VulnerabilityCandidateへ変換
+  ConvertedVulnerabilityへ変換          ConvertedVulnerabilityへ変換
         │                                           │
         └───────────────────┬───────────────────────┘
                              ▼
-              VulnerabilityCandidate[]（ベンダー非依存）
+              ConvertedVulnerability[]（ベンダー非依存）
                              │
                              ▼
-           usecase・ドメイン層（VulnerabilityProviderインターフェースのみに依存）
+           usecase・ドメイン層（SecurityAdvisoriesProviderインターフェースのみに依存）
 ```
 
 ---
@@ -285,7 +288,7 @@ Amazon Bedrock自体には、コスト（$）に対するネイティブなハ�
 
 #### アーキテクチャ
 
-契約（port）はusecase層、実装はinfrastructure層に置く（`usecases/ports/VulnerabilityProvider.ts`と同じパターン）。
+契約（port）はusecase層、実装はinfrastructure層に置く（`usecases/ports/SecurityAdvisoriesProvider.ts`と同じパターン）。
 
 ```
 usecases/ports/
@@ -584,8 +587,8 @@ packages/api/src/
 │
 ├── usecases/
 │   ├── ports/                                     # port = usecaseが外部の技術に要求する契約（interface）
-│   │   ├── VulnerabilityProvider.ts
-│   │   ├── VulnerabilityProvider.types.ts
+│   │   ├── SecurityAdvisoriesProvider.ts
+│   │   ├── SecurityAdvisoriesProvider.types.ts
 │   │   ├── NotificationClient.ts
 │   │   └── SummaryClient.ts
 │   ├── batch/
@@ -621,7 +624,9 @@ packages/api/src/
 │       ├── line/
 │       │   └── LineNotificationClient.ts
 │       ├── github/
-│       │   └── GithubAdvisoryClient.ts
+│       │   ├── GithubAdvisoryClient.ts
+│       │   ├── GithubAdvisoryClient.type.ts
+│       │   └── GithubAdvisorySchema.ts
 │       └── llm/
 │           └── BedrockSummaryClient.ts
 │
@@ -659,10 +664,10 @@ packages/api/src/
 
 **`schema/` と `packages/shared/schema/` の使い分け:**
 
-| 置き場所 | 対象 | 理由 |
-|---|---|---|
-| `packages/shared/src/schema/` | リクエストボディのバリデーション（POST・PUT） | Web のフォームバリデーションと共有するため |
-| `packages/api/src/schema/` | クエリパラメータ等の API 固有のバリデーション | Web では不要なため |
+| 置き場所 | スコープ・意図 | 対象 | 理由 |
+|---|---|---|---|
+| `packages/shared/src/schema/` | API・Web共通の入力契約 | リクエストボディのバリデーション（POST・PUT） | Web のフォームバリデーションと共有するため |
+| `packages/api/src/schema/` | このAPI自身が受け取るリクエストのうち、Web非共有のもの | クエリパラメータ等の API 固有のバリデーション | Web では不要なため |
 
 例: `packages/api/src/schema/pagination.ts`では、`page`（1以上、デフォルト1）・`limit`（1〜100、デフォルト20）をこの層でバリデーションする。
 
