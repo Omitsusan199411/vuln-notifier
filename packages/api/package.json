@@ -14,7 +14,8 @@
 		"@repo/shared": "workspace:*",
 		"hono": "^4.12.21",
 		"pg": "^8.21.0",
-		"pino": "^10.3.1"
+		"pino": "^10.3.1",
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/node": "catalog:",
