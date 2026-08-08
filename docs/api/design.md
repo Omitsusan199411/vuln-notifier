@@ -654,13 +654,15 @@ packages/api/src/
 
 **型の配置方針:**
 
-優先順位: ① `@repo/shared`（`zod-prisma-types`生成）の型を使う → ② 表現できない型のみ、各ファイルと同居する`*.types.ts`で独自定義する。
+ドメインエンティティは、Prisma schema（DBの構造）から独立した、独自の型（class）として`domain/`配下に定義する（王道DDD、Rich Domain Model）。自動生成された型は使わない。DBスキーマの変更がドメイン層・usecase層に伝播しないようにするため。
 
 | 型の種類 | 置き場所 | 理由 |
 |---|---|---|
-| ドメインエンティティ | `@repo/shared`の型をそのまま使う（domainで再定義しない） | Prisma schemaがSingle Source of Truthのため |
+| ドメインエンティティ | `domain/*/entity.ts`に独自のclassとして定義する（Prisma schemaとは独立） | DBスキーマの変更がドメイン層に伝播しないようにするため |
 | Repository interface | `domain/` | エンティティに不可分な契約（例: Userはidで検索できる） |
 | Client interface（外部API等の技術。= port） | `usecases/ports/` | 特定usecaseが要求する技術的能力。entityの本質ではない |
+
+`@repo/shared`はPrisma由来の自動生成された型を持たない。API・Web共通の入力契約（下記）を手書きのZodスキーマとして置く場所として使う。
 
 **`schema/` と `packages/shared/schema/` の使い分け:**
 
