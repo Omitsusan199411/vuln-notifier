@@ -4,13 +4,13 @@ import type {
 	GithubAdvisoryVulnerability,
 	GithubAdvistoryResponse,
 	ValidGithubAdvistoryResponse,
-} from "@/infrastructure/clients/github/GithubAdvisoryClient.type.js";
-import { GithubAdvisoryResponseSchema } from "@/infrastructure/clients/github/GithubAdvisorySchema.js";
-import type { SecurityAdvisoriesProvider } from "@/usecases/ports/SecurityAdvisoriesProvider.js";
+} from "@/infrastructure/clients/github/github-advisory-client.types.js";
+import { GithubAdvisoryResponseSchema } from "@/infrastructure/clients/github/github-advisory-schema.js";
+import type { SecurityAdvisoriesProvider } from "@/usecases/ports/security-advisories-provider.js";
 import type {
 	ConvertedVulnerability,
 	SecurityAdvisoriesSearchParams,
-} from "@/usecases/ports/SecurityAdvisoriesProvider.types.js";
+} from "@/usecases/ports/security-advisories-provider.types.js";
 
 export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 	BASE_URL = "https://api.github.com/advisories";

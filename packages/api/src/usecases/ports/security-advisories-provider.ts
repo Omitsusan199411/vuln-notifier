@@ -1,7 +1,7 @@
 import type {
 	ConvertedVulnerability,
 	SecurityAdvisoriesSearchParams,
-} from "@/usecases/ports/SecurityAdvisoriesProvider.types.js";
+} from "@/usecases/ports/security-advisories-provider.types.js";
 
 export interface SecurityAdvisoriesProvider {
 	getConvertedVulnerabilities(

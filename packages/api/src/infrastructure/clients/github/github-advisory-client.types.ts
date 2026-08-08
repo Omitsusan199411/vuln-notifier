@@ -1,5 +1,5 @@
 import type z from "zod";
-import type { GithubAdvisoryResponseSchema } from "@/infrastructure/clients/github/GithubAdvisorySchema.js";
+import type { GithubAdvisoryResponseSchema } from "@/infrastructure/clients/github/github-advisory-schema.js";
 
 export type GithubAdvistoryResponse = z.infer<
 	typeof GithubAdvisoryResponseSchema

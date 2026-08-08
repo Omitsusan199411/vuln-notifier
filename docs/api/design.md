@@ -176,13 +176,13 @@
 
 ```
 usecases/ports/
-├── SecurityAdvisoriesProvider.ts       # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
-└── SecurityAdvisoriesProvider.types.ts # 入出力の型（SecurityAdvisoriesSearchParams・ConvertedVulnerability）
+├── security-advisories-provider.ts       # interface（ベンダー非依存。将来GitHub以外のAdvisory取得元が増える可能性があるため）
+└── security-advisories-provider.types.ts # 入出力の型（SecurityAdvisoriesSearchParams・ConvertedVulnerability）
 
 infrastructure/clients/github/
-├── GithubAdvisoryClient.ts      # 実装
-├── GithubAdvisoryClient.type.ts # GitHub固有の生レスポンス型（GithubAdvisorySchemaから導出）
-└── GithubAdvisorySchema.ts      # GitHub固有の生レスポンスを検証するZodスキーマ
+├── github-advisory-client.ts      # 実装
+├── github-advisory-client.types.ts # GitHub固有の生レスポンス型（GithubAdvisorySchemaから導出）
+└── github-advisory-schema.ts      # GitHub固有の生レスポンスを検証するZodスキーマ
 ```
 
 **インターフェース設計方針:**
@@ -191,7 +191,7 @@ infrastructure/clients/github/
 - `SecurityAdvisoriesProvider`インターフェースは、GitHub固有の情報（クエリパラメータ名・レスポンスのJSON構造）を一切含まない。入力（検索条件）・出力（脆弱性データ）とも、このアプリの業務が必要とする形で定義する。
 - 外部APIとの境界では、レスポンスを`unknown`として受け取り、ランタイムバリデーション（Zod）を通してから初めて信頼できる型として扱う。TypeScriptの型はコンパイル時のみのチェックであり、実行時に外部APIが実際にどんなJSONを返すかは保証されないため。
 - ベンダー固有のバリデーションスキーマ・レスポンス構造・フィルタリング方法（例: GitHubの`severity`は「以上」の閾値指定に対応していないため、取得後にクライアント内で絞り込む）は、`GithubAdvisoryClient`の内部に完全に閉じ込める。`SecurityAdvisoriesProvider`インターフェースにもusecase層にも漏らさない。
-- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`SecurityAdvisoriesProvider`インターフェース自体は変更せず、`clients/osv/OsvAdvisoryClient.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
+- この方針により、将来GitHub以外の脆弱性データベース（例: OSV）を追加する場合も、`SecurityAdvisoriesProvider`インターフェース自体は変更せず、`clients/osv/osv-advisory-client.ts`のように、OSV固有のバリデーション・変換ロジックを持つ実装を追加するだけで済む。
 - `Vulnerability`モデルの識別子・生レスポンス関連フィールドも同じ理由でベンダー中立な命名にしている（`ghsaId`ではなく`sourceAdvisoryId`＋`advisorySource`、`advisoryUpdatedAt`ではなく`sourceUpdatedAt`、`githubAdvisoryResponse`ではなく`sourceResponse`）。「advisory」という言葉自体はGitHub固有ではなく業界共通の概念（ベンダーが公開する脆弱性文書）なので残すが、「GitHub」「GHSA」のようなベンダー固有語は含めない。
 
 **データフロー（例）:**
@@ -288,14 +288,14 @@ Amazon Bedrock自体には、コスト（$）に対するネイティブなハ�
 
 #### アーキテクチャ
 
-契約（port）はusecase層、実装はinfrastructure層に置く（`usecases/ports/SecurityAdvisoriesProvider.ts`と同じパターン）。
+契約（port）はusecase層、実装はinfrastructure層に置く（`usecases/ports/security-advisories-provider.ts`と同じパターン）。
 
 ```
 usecases/ports/
-└── SummaryClient.ts        # interface
+└── summary-client.ts        # interface
 
 infrastructure/clients/llm/
-└── BedrockSummaryClient.ts # Bedrock実装（東京リージョン）
+└── bedrock-summary-client.ts # Bedrock実装（東京リージョン）
 ```
 
 usecase層は`SummaryClient`インターフェースのみをimportし、`BedrockSummaryClient`は直接importしない。具象の生成はroutes層（composition root）で行う。テストでは`FakeSummaryClient`を注入する。
@@ -563,73 +563,73 @@ packages/api/src/
 │   ├── user/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts                         # コロケーション
-│   │   └── UserRepository.ts                      # interface
+│   │   └── user-repository.ts                     # interface
 │   ├── vulnerability/
 │   │   ├── entity.ts
-│   │   ├── entity.type.ts
+│   │   ├── entity.types.ts
 │   │   ├── entity.test.ts
-│   │   └── VulnerabilityRepository.ts
+│   │   └── vulnerability-repository.ts
 │   ├── batch/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
-│   │   └── BatchRepository.ts
+│   │   └── batch-repository.ts
 │   ├── notification/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
-│   │   └── NotificationRepository.ts
-│   ├── notificationChannel/
+│   │   └── notification-repository.ts
+│   ├── notification-channel/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
-│   │   └── NotificationChannelRepository.ts
-│   └── vulnerabilityConfig/
+│   │   └── notification-channel-repository.ts
+│   └── vulnerability-config/
 │       ├── entity.ts
 │       ├── entity.test.ts
-│       └── VulnerabilityConfigRepository.ts
+│       └── vulnerability-config-repository.ts
 │
 ├── usecases/
 │   ├── ports/                                     # port = usecaseが外部の技術に要求する契約（interface）
-│   │   ├── SecurityAdvisoriesProvider.ts
-│   │   ├── SecurityAdvisoriesProvider.types.ts
-│   │   ├── NotificationClient.ts
-│   │   └── SummaryClient.ts
+│   │   ├── security-advisories-provider.ts
+│   │   ├── security-advisories-provider.types.ts
+│   │   ├── notification-client.ts
+│   │   └── summary-client.ts
 │   ├── batch/
-│   │   ├── runBatchManual.ts
-│   │   ├── runBatchManual.test.ts                 # コロケーション
-│   │   └── runBatchScheduled.ts
+│   │   ├── run-batch-manual.ts
+│   │   ├── run-batch-manual.test.ts               # コロケーション
+│   │   └── run-batch-scheduled.ts
 │   ├── user/
-│   │   └── registerUser.ts
+│   │   └── register-user.ts
 │   ├── vulnerability/
-│   │   └── listVulnerabilities.ts
+│   │   └── list-vulnerabilities.ts
 │   ├── notification/
-│   │   └── listNotifications.ts
-│   ├── notificationChannel/
-│   │   └── createNotificationChannel.ts
-│   └── vulnerabilityConfig/
-│       └── upsertVulnerabilityConfig.ts
+│   │   └── list-notifications.ts
+│   ├── notification-channel/
+│   │   └── create-notification-channel.ts
+│   └── vulnerability-config/
+│       └── upsert-vulnerability-config.ts
 │
 ├── infrastructure/
 │   ├── repositories/                              # ドメインベース
 │   │   ├── user/
-│   │   │   └── PrismaUserRepository.ts
+│   │   │   └── prisma-user-repository.ts
 │   │   ├── vulnerability/
-│   │   │   └── PrismaVulnerabilityRepository.ts
+│   │   │   └── prisma-vulnerability-repository.ts
 │   │   ├── batch/
-│   │   │   └── PrismaBatchRepository.ts
+│   │   │   └── prisma-batch-repository.ts
 │   │   ├── notification/
-│   │   │   └── PrismaNotificationRepository.ts
-│   │   ├── notificationChannel/
-│   │   │   └── PrismaNotificationChannelRepository.ts
-│   │   └── vulnerabilityConfig/
-│   │       └── PrismaVulnerabilityConfigRepository.ts
+│   │   │   └── prisma-notification-repository.ts
+│   │   ├── notification-channel/
+│   │   │   └── prisma-notification-channel-repository.ts
+│   │   └── vulnerability-config/
+│   │       └── prisma-vulnerability-config-repository.ts
 │   └── clients/                                   # 技術ベース（portの実装のみ）
 │       ├── line/
-│       │   └── LineNotificationClient.ts
+│       │   └── line-notification-client.ts
 │       ├── github/
-│       │   ├── GithubAdvisoryClient.ts
-│       │   ├── GithubAdvisoryClient.type.ts
-│       │   └── GithubAdvisorySchema.ts
+│       │   ├── github-advisory-client.ts
+│       │   ├── github-advisory-client.types.ts
+│       │   └── github-advisory-schema.ts
 │       └── llm/
-│           └── BedrockSummaryClient.ts
+│           └── bedrock-summary-client.ts
 │
 ├── lib/
 │   ├── prisma.ts
@@ -637,7 +637,7 @@ packages/api/src/
 │
 ├── testing/                                       # 複数のテストファイルで共有するテスト補助（ヘルパー・factory）
 │   └── factories/                                 # 実利用が2箇所以上になった時点で切り出す。テストファイル自体はコロケーション
-│       └── vulnerability.ts                       # createVulnerabilityRecord・createConvertedVulnerability
+│       └── vulnerability.ts
 │
 ├── routes/                                        # Hono RPC
 │   ├── users.ts
@@ -646,17 +646,19 @@ packages/api/src/
 │   ├── batches.test.ts
 │   ├── vulnerabilities.ts
 │   ├── notifications.ts
-│   ├── notificationChannels.ts
-│   └── vulnerabilityConfigs.ts
+│   ├── notification-channels.ts
+│   └── vulnerability-configs.ts
 │
 ├── middleware/
 │   ├── auth.ts
-│   └── adminGuard.ts
+│   └── admin-guard.ts
 │
 └── schema/                                        # Zodスキーマ（API固有）
     ├── pagination.ts
     └── index.ts
 ```
+
+**命名規則：** `packages/api`配下のファイル名・ディレクトリ名は、kebab-case（例: `github-advisory-client.ts`・`notification-channel/`）に統一する。
 
 **型の配置方針:**
 
