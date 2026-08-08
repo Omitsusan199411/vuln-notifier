@@ -80,7 +80,7 @@ docker compose exec api pnpm --filter api exec prisma migrate dev --name <migrat
 docker compose exec api pnpm --filter api exec prisma migrate deploy
 
 # Prismaクライアント・Zodスキーマの生成
-docker compose exec workspace pnpm --filter api exec prisma generate
+docker compose exec api pnpm --filter api exec prisma generate
 
 # Prisma Studio（DB GUIツール）
 docker compose exec api pnpm --filter api exec prisma studio
