@@ -54,5 +54,59 @@
 		"formatter": {
 			"trailingCommas": "none"
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["packages/api/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useFilenamingConvention": {
+							"level": "error",
+							"options": {
+								"filenameCases": ["kebab-case"]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/web/src/components/**",
+				"!packages/web/src/components/ui/**"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"useFilenamingConvention": {
+							"level": "error",
+							"options": {
+								"filenameCases": ["PascalCase"]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"includes": [
+				"packages/web/src/**",
+				"!packages/web/src/components/**",
+				"!packages/web/src/app/**"
+			],
+			"linter": {
+				"rules": {
+					"style": {
+						"useFilenamingConvention": {
+							"level": "error",
+							"options": {
+								"filenameCases": ["camelCase"]
+							}
+						}
+					}
+				}
+			}
+		}
+	]
 }
