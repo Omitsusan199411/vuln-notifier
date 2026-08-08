@@ -98,8 +98,8 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 								severity: severity,
 								packageName: vulnerability.package.name,
 								cvssScore: cvss_severities?.cvss_v4?.score ?? null,
-								publishedAt: new Date(published_at),
-								sourceUpdatedAt: new Date(updated_at),
+								publishedAt: published_at,
+								sourceUpdatedAt: updated_at,
 								sourceResponse: validGithubSecurityAdvisory,
 							};
 

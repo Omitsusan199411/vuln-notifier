@@ -7,8 +7,8 @@ export const GithubAdvisoryResponseSchema = z.object({
 	html_url: z.string(),
 	summary: z.string(),
 	severity: z.enum(["unknown", "low", "medium", "high", "critical"]),
-	published_at: z.string(),
-	updated_at: z.string(),
+	published_at: z.string().pipe(z.coerce.date()),
+	updated_at: z.string().pipe(z.coerce.date()),
 	vulnerabilities: z
 		.array(
 			z.object({
