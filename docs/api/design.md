@@ -566,6 +566,7 @@ packages/api/src/
 │   │   └── UserRepository.ts                      # interface
 │   ├── vulnerability/
 │   │   ├── entity.ts
+│   │   ├── entity.type.ts                         # VulnerabilityProps（独自定義。Prisma schemaとは独立）
 │   │   ├── entity.test.ts
 │   │   └── VulnerabilityRepository.ts
 │   ├── batch/
@@ -631,7 +632,12 @@ packages/api/src/
 │           └── BedrockSummaryClient.ts
 │
 ├── lib/
-│   └── prisma.ts
+│   ├── prisma.ts
+│   └── logger.ts
+│
+├── testing/                                       # 複数のテストファイルで共有するテスト補助（ヘルパー・factory）
+│   └── factories/                                 # 実利用が2箇所以上になった時点で切り出す。テストファイル自体はコロケーション
+│       └── vulnerability.ts                       # createVulnerabilityProps・createConvertedVulnerability
 │
 ├── routes/                                        # Hono RPC
 │   ├── users.ts

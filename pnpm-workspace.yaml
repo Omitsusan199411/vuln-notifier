@@ -5,3 +5,4 @@ catalog:
   typescript: "6.0.3"
   "@types/node": "^20.19.0"
   zod: "^4.4.3"
+  "@faker-js/faker": "10.5.0"

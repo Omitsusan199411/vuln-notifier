@@ -34,6 +34,7 @@
 		"jsdom": "^29.1.1",
 		"msw": "^2.14.5",
 		"tailwindcss": "^4",
-		"typescript": "catalog:"
+		"typescript": "catalog:",
+		"@faker-js/faker": "catalog:"
 	}
 }
