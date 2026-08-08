@@ -566,7 +566,7 @@ packages/api/src/
 │   │   └── UserRepository.ts                      # interface
 │   ├── vulnerability/
 │   │   ├── entity.ts
-│   │   ├── entity.type.ts                         # VulnerabilityProps（独自定義。Prisma schemaとは独立）
+│   │   ├── entity.type.ts
 │   │   ├── entity.test.ts
 │   │   └── VulnerabilityRepository.ts
 │   ├── batch/
@@ -637,7 +637,7 @@ packages/api/src/
 │
 ├── testing/                                       # 複数のテストファイルで共有するテスト補助（ヘルパー・factory）
 │   └── factories/                                 # 実利用が2箇所以上になった時点で切り出す。テストファイル自体はコロケーション
-│       └── vulnerability.ts                       # createVulnerabilityProps・createConvertedVulnerability
+│       └── vulnerability.ts                       # createVulnerabilityRecord・createConvertedVulnerability
 │
 ├── routes/                                        # Hono RPC
 │   ├── users.ts
