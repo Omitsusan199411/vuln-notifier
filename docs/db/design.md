@@ -59,3 +59,13 @@ CI/CD パイプラインで `prisma migrate deploy` の後に `prisma db seed` �
 | `nuget` | .NET |
 | `go` | Go |
 | `composer` | PHP |
+
+#### 開発用ダミーデータ
+
+`Ecosystem`以外の全テーブル（`User`・`Batch`・`Vulnerability`等）向けに、動作確認しやすくするためのダミーデータを、`prisma db seed`とは**独立したコマンド**（例: `pnpm seed:dev`）で投入する。
+
+**なぜ`prisma db seed`と分けるか：** `prisma db seed`は本番でも自動実行されるため、同じコマンド内で`NODE_ENV`分岐に頼ると、設定ミスやロジックのバグで本番にダミーデータが混入するリスクがある。コマンド自体を分けることで、本番の実行経路には物理的に含まれないようにする。
+
+**投入順序：** 外部キー制約があるため、`Ecosystem` → `User` → `Batch` → `Vulnerability` → `NotificationChannel` → `Notification`の順に、前段で実際に作成されたレコードのIDを使って投入する。
+
+**値の生成：** 業務上の意味を持つ値（enum等）は固定値、それ以外は`@faker-js/faker`で生成する（`packages/api/src/testing/factories/`の方針と同様）。
