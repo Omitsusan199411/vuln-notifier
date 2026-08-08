@@ -1,5 +1,5 @@
-import { AdvisorySourceSchema } from "@repo/shared";
 import { z } from "zod";
+import { AdvisorySource } from "@/generated/prisma/enums.js";
 import type {
 	GithubAdvisoryVulnerability,
 	GithubAdvistoryResponse,
@@ -90,7 +90,7 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 
 							const convertedVulnerability = {
 								sourceAdvisoryId: ghsa_id,
-								advisorySource: AdvisorySourceSchema.enum.github,
+								advisorySource: AdvisorySource.github,
 								cveId: cve_id,
 								advisoryUrl: html_url,
 								ecosystem: vulnerability.package.ecosystem,
