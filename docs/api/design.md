@@ -563,28 +563,28 @@ packages/api/src/
 │   ├── user/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts                         # コロケーション
-│   │   └── user-repository.ts                     # interface
+│   │   └── repository.ts                     # interface
 │   ├── vulnerability/
 │   │   ├── entity.ts
 │   │   ├── entity.types.ts
 │   │   ├── entity.test.ts
-│   │   └── vulnerability-repository.ts
+│   │   └── repository.ts
 │   ├── batch/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
-│   │   └── batch-repository.ts
+│   │   └── repository.ts
 │   ├── notification/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
-│   │   └── notification-repository.ts
+│   │   └── repository.ts
 │   ├── notification-channel/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
-│   │   └── notification-channel-repository.ts
+│   │   └── repository.ts
 │   └── vulnerability-config/
 │       ├── entity.ts
 │       ├── entity.test.ts
-│       └── vulnerability-config-repository.ts
+│       └── repository.ts
 │
 ├── usecases/
 │   ├── ports/                                     # port = usecaseが外部の技術に要求する契約（interface）
@@ -608,19 +608,19 @@ packages/api/src/
 │       └── upsert-vulnerability-config.ts
 │
 ├── infrastructure/
-│   ├── repositories/                              # ドメインベース
+│   ├── prisma/                                    # 技術ベース（Repository interfaceの実装）
 │   │   ├── user/
-│   │   │   └── prisma-user-repository.ts
+│   │   │   └── repository.ts
 │   │   ├── vulnerability/
-│   │   │   └── prisma-vulnerability-repository.ts
+│   │   │   └── repository.ts
 │   │   ├── batch/
-│   │   │   └── prisma-batch-repository.ts
+│   │   │   └── repository.ts
 │   │   ├── notification/
-│   │   │   └── prisma-notification-repository.ts
+│   │   │   └── repository.ts
 │   │   ├── notification-channel/
-│   │   │   └── prisma-notification-channel-repository.ts
+│   │   │   └── repository.ts
 │   │   └── vulnerability-config/
-│   │       └── prisma-vulnerability-config-repository.ts
+│   │       └── repository.ts
 │   └── clients/                                   # 技術ベース（portの実装のみ）
 │       ├── line/
 │       │   └── line-notification-client.ts
