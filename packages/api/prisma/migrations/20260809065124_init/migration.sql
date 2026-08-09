@@ -59,7 +59,7 @@ CREATE TABLE "vulnerabilities" (
     "batch_id" TEXT NOT NULL,
     "package_name" TEXT NOT NULL,
     "severity" "severity" NOT NULL,
-    "cvss_score" DECIMAL(3,1),
+    "cvss_score" DOUBLE PRECISION,
     "summary" TEXT NOT NULL,
     "llm_summary" TEXT,
     "advisory_url" TEXT NOT NULL,
