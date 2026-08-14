@@ -118,7 +118,7 @@
 | パラメータ | 説明 | 例 |
 |---|---|---|
 | `trigger_type` | 実行種別で絞り込み | `?trigger_type=manual` / `?trigger_type=scheduled` |
-| `cursor` | カーソルページネーション（前回レスポンスの `nextCursor` を指定） | `?cursor=<nextCursor>` |
+| `cursor` | カーソルページネーション（前回レスポンスの `lastCursor` を指定） | `?cursor=<lastCursor>` |
 | `limit` | 取得件数 | `?limit=20` |
 
 **備考:**
@@ -140,12 +140,12 @@
 | `GET` | `/vulnerabilities` | 全ユーザーの脆弱性一覧取得 | 管理者 |
 | `GET` | `/vulnerabilities/:vulnerability_id` | 脆弱性詳細取得 | 一般ユーザー / 管理者 |
 | `PUT` | `/vulnerabilities/:vulnerability_id` | 脆弱性更新 | 管理者 |
-| `DELETE` | `/vulnerabilities/:vulnerability_id` | 脆弱性削除 | 管理者 |
 
 **備考:**
 - 脆弱性の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
+- 脆弱性の削除は提供しない。`Notification`（通知履歴）が`Vulnerability`をCascadeで参照しており、削除すると履歴も失われるため。
 - ユーザーの脆弱性は通知履歴（`GET /users/:user_id/notification-channels/:channel_id/notifications`）経由で参照する。
-- `GET /vulnerabilities` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
+- `GET /vulnerabilities` はカーソルページネーション対応（`?cursor=<lastCursor>&limit=20`）。
 - 既存のアドバイザリ（`Vulnerability.sourceAdvisoryId`）でも、取得元の `updated_at`（`Vulnerability.sourceUpdatedAt`）が進んでいればレコードを更新し、`llmSummary` を再生成する。
 
 ---
@@ -160,7 +160,7 @@
 
 **備考:**
 - 通知の作成は `POST /batches` のハンドラー内で行うため、作成エンドポイントは不要。
-- `GET /notifications`・`GET /users/:user_id/notification-channels/:channel_id/notifications` はカーソルページネーション対応（`?cursor=<nextCursor>&limit=20`）。
+- `GET /notifications`・`GET /users/:user_id/notification-channels/:channel_id/notifications` はカーソルページネーション対応（`?cursor=<lastCursor>&limit=20`）。
 - 脆弱性が更新（`sourceUpdatedAt` の変化）された場合、既に通知済みのユーザーにも再通知する。
 
 ---
@@ -610,17 +610,23 @@ packages/api/src/
 ├── infrastructure/
 │   ├── prisma/                                    # 技術ベース（Repository interfaceの実装）
 │   │   ├── user/
-│   │   │   └── repository.ts
+│   │   │   ├── repository.ts
+│   │   │   └── mapper.ts                          # Prismaの行 ⇔ ドメインEntity の相互変換
 │   │   ├── vulnerability/
-│   │   │   └── repository.ts
+│   │   │   ├── repository.ts
+│   │   │   └── mapper.ts
 │   │   ├── batch/
-│   │   │   └── repository.ts
+│   │   │   ├── repository.ts
+│   │   │   └── mapper.ts
 │   │   ├── notification/
-│   │   │   └── repository.ts
+│   │   │   ├── repository.ts
+│   │   │   └── mapper.ts
 │   │   ├── notification-channel/
-│   │   │   └── repository.ts
+│   │   │   ├── repository.ts
+│   │   │   └── mapper.ts
 │   │   └── vulnerability-config/
-│   │       └── repository.ts
+│   │       ├── repository.ts
+│   │       └── mapper.ts
 │   └── clients/                                   # 技術ベース（portの実装のみ）
 │       ├── line/
 │       │   └── line-notification-client.ts
@@ -669,6 +675,9 @@ packages/api/src/
 | ドメインエンティティ | `domain/*/entity.ts`に独自のclassとして定義する（Prisma schemaとは独立） | DBスキーマの変更がドメイン層に伝播しないようにするため |
 | Repository interface | `domain/` | エンティティに不可分な契約（例: Userはidで検索できる） |
 | Client interface（外部API等の技術。= port） | `usecases/ports/` | 特定usecaseが要求する技術的能力。entityの本質ではない |
+| Mapper（Prismaの行 ⇔ ドメインEntityの変換） | `infrastructure/prisma/*/mapper.ts` | Prismaの型を知る必要があるためdomain/には置けない。Repositoryから変換ロジックを分離し、Repositoryは「DBへどう問い合わせるか」に専念する |
+
+**Mapperの方針:** `Mapper`はPrismaの行とドメインEntityの相互変換（DB→Entity、Entity→DB書き込み用の形の両方向）のみを責務とする。`Repository`は「DBへどう問い合わせるか」に専念し、行の形をどう変換するかは`Mapper`に委譲する。`Mapper`は`infrastructure/prisma/*/repository.ts`からのみ呼ばれ、`domain/`・`usecases/`からは参照しない（Prismaの型を知っているため）。
 
 `@repo/shared`はPrisma由来の自動生成された型を持たない。API・Web共通の入力契約（下記）を手書きのZodスキーマとして置く場所として使う。
 
