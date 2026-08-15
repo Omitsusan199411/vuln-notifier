@@ -65,7 +65,7 @@ CREATE TABLE "vulnerabilities" (
     "advisory_url" TEXT NOT NULL,
     "published_at" TIMESTAMP(3) NOT NULL,
     "source_updated_at" TIMESTAMP(3) NOT NULL,
-    "source_response" JSONB,
+    "source_response" JSONB NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
