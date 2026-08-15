@@ -12,9 +12,6 @@ catalogs:
     '@types/node':
       specifier: ^20.19.0
       version: 20.19.39
-    type-fest:
-      specifier: ^5.8.0
-      version: 5.8.0
     typescript:
       specifier: ^6.0.3
       version: 6.0.3
@@ -87,9 +84,6 @@ importers:
       tsx:
         specifier: ^4.7.1
         version: 4.21.0
-      type-fest:
-        specifier: 'catalog:'
-        version: 5.8.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -175,9 +169,6 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.2.4
-      type-fest:
-        specifier: 'catalog:'
-        version: 5.8.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

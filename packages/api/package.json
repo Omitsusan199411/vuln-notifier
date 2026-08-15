@@ -23,7 +23,6 @@
 		"prisma": "^7.8.0",
 		"tsx": "^4.7.1",
 		"typescript": "catalog:",
-		"@faker-js/faker": "catalog:",
-		"type-fest": "catalog:"
+		"@faker-js/faker": "catalog:"
 	}
 }
