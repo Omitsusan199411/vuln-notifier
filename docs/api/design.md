@@ -609,6 +609,8 @@ packages/api/src/
 │
 ├── infrastructure/
 │   ├── prisma/                                    # 技術ベース（Repository interfaceの実装）
+│   │   ├── shared/                                # 複数のRepositoryをまたぐ共通処理（例: カーソルページネーション）
+│   │   │   └── pagination.ts
 │   │   ├── user/
 │   │   │   ├── repository.ts
 │   │   │   └── mapper.ts                          # Prismaの行 ⇔ ドメインEntity の相互変換
@@ -680,6 +682,8 @@ packages/api/src/
 **Mapperの方針:** `Mapper`はPrismaの行とドメインEntityの相互変換（DB→Entity、Entity→DB書き込み用の形の両方向）のみを責務とする。`Repository`は「DBへどう問い合わせるか」に専念し、行の形をどう変換するかは`Mapper`に委譲する。`Mapper`は`infrastructure/prisma/*/repository.ts`からのみ呼ばれ、`domain/`・`usecases/`からは参照しない（Prismaの型を知っているため）。
 
 **なぜEntity→DB書き込み用の変換（`toXxxPersistence`）が必要か:** ドメインEntityのフィールドは`private`（`_`付き）で、外から見えるのは`getter`のみ。PrismaがINSERT/UPDATEに要求するのは`{ severity: ..., ecosystemId: ... }`のような決まったキー名を持つプレーンな値なので、Entityインスタンスをそのまま`data`に渡すことはできない（`_severity`のような別名でしか値を持たないため、型も合わず、渡せたとしても列が埋まらない）。`Mapper`がgetterを1つずつ読み、Prismaが要求する形に詰め替える。
+
+**`infrastructure/prisma/shared/`の方針:** カーソルページネーション（`cursor`・`skip`・`take`の組み立て、次ページ有無の判定）のように、特定のエンティティに依存せず複数の`Repository`で共通して必要になる処理を置く。`where`・`orderBy`・使うPrismaモデル・使う`Mapper`はエンティティごとに異なるため、各`Repository`が呼び出し側としてこれらを渡し、`shared/`側の関数が共通部分だけを担う。将来複数の`Repository`をまたぐ`$transaction`のラッパー等が必要になった場合も、同様にここへ追加する。
 
 `@repo/shared`はPrisma由来の自動生成された型を持たない。API・Web共通の入力契約（下記）を手書きのZodスキーマとして置く場所として使う。
 
