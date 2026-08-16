@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { AdvisorySource } from "@/generated/prisma/enums.js";
 import type {
 	GithubAdvisoryVulnerability,
 	GithubAdvistoryResponse,
@@ -88,9 +87,9 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 						(vulnerability: GithubAdvisoryVulnerability) => {
 							if (vulnerability.package.name === null) return [];
 
-							const convertedVulnerability = {
+							const convertedVulnerability: ConvertedVulnerability = {
 								sourceAdvisoryId: ghsa_id,
-								advisorySource: AdvisorySource.github,
+								advisorySource: "github",
 								cveId: cve_id,
 								advisoryUrl: html_url,
 								ecosystem: vulnerability.package.ecosystem,
