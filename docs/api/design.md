@@ -679,6 +679,8 @@ packages/api/src/
 
 **Mapperの方針:** `Mapper`はPrismaの行とドメインEntityの相互変換（DB→Entity、Entity→DB書き込み用の形の両方向）のみを責務とする。`Repository`は「DBへどう問い合わせるか」に専念し、行の形をどう変換するかは`Mapper`に委譲する。`Mapper`は`infrastructure/prisma/*/repository.ts`からのみ呼ばれ、`domain/`・`usecases/`からは参照しない（Prismaの型を知っているため）。
 
+**なぜEntity→DB書き込み用の変換（`toXxxPersistence`）が必要か:** ドメインEntityのフィールドは`private`（`_`付き）で、外から見えるのは`getter`のみ。PrismaがINSERT/UPDATEに要求するのは`{ severity: ..., ecosystemId: ... }`のような決まったキー名を持つプレーンな値なので、Entityインスタンスをそのまま`data`に渡すことはできない（`_severity`のような別名でしか値を持たないため、型も合わず、渡せたとしても列が埋まらない）。`Mapper`がgetterを1つずつ読み、Prismaが要求する形に詰め替える。
+
 `@repo/shared`はPrisma由来の自動生成された型を持たない。API・Web共通の入力契約（下記）を手書きのZodスキーマとして置く場所として使う。
 
 **`schema/` と `packages/shared/schema/` の使い分け:**
