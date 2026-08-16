@@ -1,7 +1,5 @@
-import type {
-	BatchStatus,
-	BatchTriggerType,
-} from "@/generated/prisma/enums.js";
+export type BatchStatus = "pending" | "running" | "success" | "failed";
+export type BatchTriggerType = "scheduled" | "manual";
 
 export interface ReconstructedBatchProps {
 	readonly id: string;

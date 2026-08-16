@@ -1,11 +1,9 @@
 import type {
+	BatchStatus,
+	BatchTriggerType,
 	NewBatchProps,
 	ReconstructedBatchProps,
 } from "@/domain/batch/entity.type.js";
-import type {
-	BatchStatus,
-	BatchTriggerType,
-} from "@/generated/prisma/enums.js";
 
 export class Batch {
 	private readonly _id: string | undefined;
@@ -18,8 +16,8 @@ export class Batch {
 		this._id = "id" in props ? props.id : undefined;
 		this._triggerType = props.triggerType;
 		this._triggeredBy = props.triggeredBy;
-		this._executedAt = props.executedAt;
-		this._status = props.status;
+		this._executedAt = props?.executedAt ?? new Date();
+		this._status = props?.status ?? "pending";
 	}
 
 	get id(): string | undefined {

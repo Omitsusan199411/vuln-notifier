@@ -3,7 +3,6 @@ import type {
 	NewBatchProps,
 	ReconstructedBatchProps,
 } from "@/domain/batch/entity.type.js";
-import { BatchStatus, BatchTriggerType } from "@/generated/prisma/enums.js";
 
 // batchesテーブルに保存されたデータ（レコード）
 export const createReconstructedBatchProps = (
@@ -13,10 +12,10 @@ export const createReconstructedBatchProps = (
 		id: faker.string.uuid({
 			version: 7,
 		}),
-		triggerType: BatchTriggerType.manual,
+		triggerType: "manual",
 		triggeredBy: faker.string.nanoid(),
 		executedAt: faker.date.recent(),
-		status: BatchStatus.pending,
+		status: "pending",
 		...overrides,
 	};
 };
@@ -25,10 +24,10 @@ export const createNewBatchProps = (
 	overrides: Partial<NewBatchProps>,
 ): NewBatchProps => {
 	return {
-		triggerType: BatchTriggerType.manual,
+		triggerType: "manual",
 		triggeredBy: faker.string.nanoid(),
 		executedAt: faker.date.recent(),
-		status: BatchStatus.pending,
+		status: "pending",
 		...overrides,
 	};
 };
