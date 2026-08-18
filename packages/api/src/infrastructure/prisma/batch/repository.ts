@@ -3,11 +3,14 @@ import type {
 	BatchStatus,
 	BatchTriggerType,
 	NewBatchProps,
-	ReconstructedBatchProps,
 } from "@/domain/batch/entity.type.js";
 import type { BatchRepository } from "@/domain/batch/repository.js";
 import { PrismaBatchMapper } from "@/infrastructure/prisma/batch/mapper.js";
 import prisma from "@/lib/prisma.js";
+import {
+	buildCursorQueryOptions,
+	sliceCursorPage,
+} from "../shared/pagination.js";
 
 export class PrismaBatchRepository implements BatchRepository {
 	async findById(batchId: string): Promise<Batch | null> {
@@ -42,14 +45,10 @@ export class PrismaBatchRepository implements BatchRepository {
 			sort,
 		} = params;
 
-		// 次のページがあるかを判定するため、limit件より1件多く取得する
-		const PEEK_AHEAD_COUNT = 1;
-		// cursorの行自体を含めない（前回の最後の1件を今回も返さないようにする）ためskipする件数
-		const EXCLUSIVE_CURSOR_OFFSET = 1;
-
-		const cursorOption = cursor ? { id: cursor } : undefined;
-		const skipCount = cursor ? EXCLUSIVE_CURSOR_OFFSET : undefined;
-		const limitOption = limit + PEEK_AHEAD_COUNT;
+		const paginationParams = buildCursorQueryOptions({
+			cursor,
+			limit,
+		});
 
 		const fetchedBatches = await prisma.batch.findMany({
 			where: {
@@ -61,18 +60,19 @@ export class PrismaBatchRepository implements BatchRepository {
 			orderBy: {
 				id: sort,
 			},
-			cursor: cursorOption,
-			skip: skipCount,
-			take: limitOption,
+			...paginationParams,
 		});
 
-		const batches = fetchedBatches
-			.slice(0, limit)
-			.map((batch) => PrismaBatchMapper.toDomain(batch));
+		const { slicedRecords, hasNextPage } = sliceCursorPage(
+			fetchedBatches,
+			limit,
+		);
 
-		const lastCursor = this.hasNextPage(fetchedBatches, limitOption)
-			? (batches.at(-1)?.id ?? null)
-			: null;
+		const batches = slicedRecords.map((batch) =>
+			PrismaBatchMapper.toDomain(batch),
+		);
+
+		const lastCursor = hasNextPage ? (batches.at(-1)?.id ?? null) : null;
 
 		return { batches, lastCursor };
 	}
@@ -86,12 +86,5 @@ export class PrismaBatchRepository implements BatchRepository {
 		const domain = PrismaBatchMapper.toDomain(createdBatch);
 
 		return domain;
-	}
-
-	private hasNextPage(
-		fetchedBatches: ReconstructedBatchProps[],
-		limitOption: number,
-	): boolean {
-		return fetchedBatches.length >= limitOption;
 	}
 }
