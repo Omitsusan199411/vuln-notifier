@@ -1,7 +1,7 @@
 // vitestのグローバル設定
 
 import { afterAll, afterEach, beforeAll } from "vitest";
-import { server } from "@/tests/mocks/server";
+import { server } from "@/testing/mocks/server";
 // testing-libraryのマッチャー等をvitestで使えるようにするため
 import "@testing-library/jest-dom/vitest";
 

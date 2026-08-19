@@ -12,7 +12,7 @@ export default defineConfig({
 		environment: "jsdom",
 		// testing-libraryのマッチャー等をvitestで使えるようにするため
 		setupFiles: ["./vitest.setup.ts"],
-		include: ["src/tests/**/*.test.{ts,tsx}"],
+		include: ["src/**/*.test.{ts,tsx}"],
 		// ホスト上でテストを実行する場合にも環境変数を使えるようにする（コンテナ内はdocker-compose.yamlから提供）
 		env: {
 			NEXT_PUBLIC_API_URL: "http://localhost:3001",
