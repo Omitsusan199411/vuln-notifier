@@ -7,8 +7,8 @@ import type {
 import { GithubAdvisoryResponseSchema } from "@/infrastructure/clients/github/github-advisory-schema.js";
 import type { SecurityAdvisoriesProvider } from "@/usecases/ports/security-advisories-provider.js";
 import type {
-	ConvertedVulnerability,
 	SecurityAdvisoriesSearchParams,
+	VulnerabilityDto,
 } from "@/usecases/ports/security-advisories-provider.types.js";
 
 export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
@@ -16,7 +16,7 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 
 	async getConvertedVulnerabilities(
 		searchParams: SecurityAdvisoriesSearchParams,
-	): Promise<ConvertedVulnerability[]> {
+	): Promise<VulnerabilityDto[]> {
 		const githubSecurityAdvisories =
 			await this.fetchSecurityAdvisories(searchParams);
 		const convertedVulnerability = this.convertSecurityAdvisories(
@@ -41,9 +41,9 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 			throw new Error();
 		}
 
-		const body: unknown[] = await response.json();
+		const responseBody: unknown[] = await response.json();
 
-		return body;
+		return responseBody;
 	}
 
 	private buildFecthUrl(
@@ -57,7 +57,7 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 
 	private convertSecurityAdvisories(
 		githubSecurityAdvisories: unknown[],
-	): ConvertedVulnerability[] {
+	): VulnerabilityDto[] {
 		// スキーマに一致しない場合、ZodErrorを投げる
 		const validGithubSecurityAdvisories = z
 			.array(GithubAdvisoryResponseSchema)
@@ -87,7 +87,7 @@ export class GithubAdvisoryClient implements SecurityAdvisoriesProvider {
 						(vulnerability: GithubAdvisoryVulnerability) => {
 							if (vulnerability.package.name === null) return [];
 
-							const convertedVulnerability: ConvertedVulnerability = {
+							const convertedVulnerability: VulnerabilityDto = {
 								sourceAdvisoryId: ghsa_id,
 								advisorySource: "github",
 								cveId: cve_id,

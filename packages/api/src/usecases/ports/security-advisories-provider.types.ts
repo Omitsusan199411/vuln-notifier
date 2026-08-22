@@ -14,7 +14,7 @@ export interface SecurityAdvisoriesSearchParams {
 }
 
 // ベンダー非依存（各Client実装が自身のレスポンス形式からこの形に変換する）。
-export interface ConvertedVulnerability {
+export interface VulnerabilityDto {
 	sourceAdvisoryId: string;
 	advisorySource: AdvisorySource;
 	cveId: string;
