@@ -19,10 +19,11 @@
 		"zod": "catalog:"
 	},
 	"devDependencies": {
+		"@faker-js/faker": "catalog:",
 		"@types/node": "catalog:",
+		"fishery": "^2.4.0",
 		"prisma": "^7.8.0",
 		"tsx": "^4.7.1",
-		"typescript": "catalog:",
-		"@faker-js/faker": "catalog:"
+		"typescript": "catalog:"
 	}
 }
