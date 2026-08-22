@@ -55,7 +55,10 @@
 
 #### factory
 
-- DB への書き込み・関連付け（association）が必要な factory は `fishery` を使い、`src/testing/factories/persisted/` に置く。プレーンな build 用 factory（DB に依存しない）とはディレクトリを分け、ドメイン層のテストが誤って Prisma クライアントに依存しないようにする
+`fishery` を使う。build 専用（DB に依存しない）factory と、DB への書き込み・関連付け（association）を行う factory は、ディレクトリを分ける。同じファイルに共存させると、ドメイン層のテストが build 専用 factory だけを import したつもりでも、同じファイルにある Prisma クライアントの import が一緒に読み込まれてしまうため。
+
+- `src/testing/factories/*.ts`: build 専用。`onCreate` を持たず、Prisma に依存しない。ドメイン層のテストはここだけを import する
+- `src/testing/factories/persisted/*.ts`: `onCreate` で実際に DB へ保存する。同名の build 専用 factory がある場合は、デフォルト値を重複させないよう `build()` を呼んで再利用する（例: `persisted/batch.ts` の `batchFactory` は `../batch.js` の `newBatchFactory.build()` を呼ぶ）
 
 ---
 
