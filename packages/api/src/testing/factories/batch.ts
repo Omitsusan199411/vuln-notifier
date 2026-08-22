@@ -1,33 +1,24 @@
 import { faker } from "@faker-js/faker";
+import { Factory } from "fishery";
 import type {
 	NewBatchProps,
 	ReconstructedBatchProps,
 } from "@/domain/batch/entity.type.js";
 
-// batchesテーブルに保存されたデータ（レコード）
-export const createReconstructedBatchProps = (
-	overrides: Partial<ReconstructedBatchProps>,
-): ReconstructedBatchProps => {
-	return {
-		id: faker.string.uuid({
-			version: 7,
-		}),
+// DBに保存済みのレコードを再現する。build専用（onCreateは無く、DBには触らない）
+export const reconstructedBatchFactory =
+	Factory.define<ReconstructedBatchProps>(() => ({
+		id: faker.string.uuid({ version: 7 }),
 		triggerType: "manual",
 		triggeredBy: faker.string.nanoid(),
 		executedAt: faker.date.recent(),
 		status: "pending",
-		...overrides,
-	};
-};
+	}));
 
-export const createNewBatchProps = (
-	overrides: Partial<NewBatchProps>,
-): NewBatchProps => {
-	return {
-		triggerType: "manual",
-		triggeredBy: faker.string.nanoid(),
-		executedAt: faker.date.recent(),
-		status: "pending",
-		...overrides,
-	};
-};
+// 新規作成前のBatchの形を組み立てる。build専用（onCreateは無く、DBには触らない）
+export const newBatchFactory = Factory.define<NewBatchProps>(() => ({
+	triggerType: "manual",
+	triggeredBy: faker.string.nanoid(),
+	executedAt: faker.date.recent(),
+	status: "pending",
+}));
