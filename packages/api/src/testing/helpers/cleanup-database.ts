@@ -9,6 +9,7 @@ export const cleanupDatabase = async () => {
 	const tableNames = tables.map((table) => `"${table.tablename}"`).join(", ");
 	if (!tableNames) return;
 
+	// テーブル名はSQLのステートメントそのものなので$executeRaw（プリペアドステートメント）は使えない。ただし、tableNamesはユーザーが動的に注入するものではないので問題ない。ましてやテストDBなので問題ない
 	await prisma.$executeRawUnsafe(
 		`TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE`,
 	);
