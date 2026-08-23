@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssh-client 
 # node:24-slim に既存の node ユーザー(UID 1000)と衝突しないUIDを使う
 RUN useradd -u 1001 -m -s /bin/bash vscode && chown -R vscode:vscode /home/vscode
 
-ENV PATH=/workspace/node_modules/.bin/:$PATH
+ENV PATH=/workspace/node_modules/.bin/:/workspace/packages/api/node_modules/.bin:/workspace/packages/web/node_modules/.bin:$PATH
 
 # corepack: package.json の packageManager に従って pnpm を呼び出せるようにする（/usr/local/bin書き込みのためrootのうちに実行）
 RUN corepack enable
@@ -15,20 +15,21 @@ RUN corepack enable
 USER vscode
 
 WORKDIR /workspace
+
+# node_modulesは名前付きボリュームとしてマウントされる。パスが存在しないとDockerがroot所有で自動作成してしまい、
+# vscodeユーザーで実行するpnpm installが権限エラーになるため、先にvscode所有で作成しておく
 RUN mkdir -p node_modules
 
 FROM base AS workspace
 ENTRYPOINT ["sh", "-c", "pnpm install && sleep infinity"]
 
 FROM base AS api
-ENV PATH=/workspace/packages/api/node_modules/.bin:$PATH
 WORKDIR /workspace/packages/api
 EXPOSE 3001
 ENTRYPOINT ["sh", "docker-entrypoint.sh"]
 
 
 FROM base AS web
-ENV PATH=/workspace/packages/web/node_modules/.bin:$PATH
 WORKDIR /workspace/packages/web
 EXPOSE 3000
 ENTRYPOINT ["pnpm", "dev"]
