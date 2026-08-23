@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssh-client 
 # node:24-slim に既存の node ユーザー(UID 1000)と衝突しないUIDを使う
 RUN useradd -u 1001 -m -s /bin/bash vscode && chown -R vscode:vscode /home/vscode
 
-# pnpm run を介さずワークスペースルートのバイナリを直接実行できるようにする
 ENV PATH=/workspace/node_modules/.bin/:$PATH
 
 # corepack: package.json の packageManager に従って pnpm を呼び出せるようにする（/usr/local/bin書き込みのためrootのうちに実行）
@@ -22,12 +21,14 @@ FROM base AS workspace
 ENTRYPOINT ["sh", "-c", "pnpm install && sleep infinity"]
 
 FROM base AS api
+ENV PATH=/workspace/packages/api/node_modules/.bin:$PATH
 WORKDIR /workspace/packages/api
 EXPOSE 3001
-ENTRYPOINT ["pnpm", "dev"]
+ENTRYPOINT ["sh", "docker-entrypoint.sh"]
 
 
 FROM base AS web
+ENV PATH=/workspace/packages/web/node_modules/.bin:$PATH
 WORKDIR /workspace/packages/web
 EXPOSE 3000
 ENTRYPOINT ["pnpm", "dev"]

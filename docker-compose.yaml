@@ -3,6 +3,8 @@ x-shared-db: &shared-db
 x-shared-env: &shared-env
   CORS_ORIGIN: http://localhost:4000
   CHOKIDAR_USEPOLLING: "true" # ファイルの変更で確実に検知し、HMRされるようにするため追加（vitestがchokidirでファイル変更がないかポーリングさせる）
+  DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
+  TEST_DATABASE_URL: postgresql://vuln:password@db-test:5432/vuln_test
 
 services:
   db:
@@ -61,8 +63,6 @@ services:
       target: api # Dockerfile.dev の AS api ステージを使用
     environment:
       <<: *shared-env
-      DATABASE_URL: postgresql://vuln:password@db:5432/vuln_development
-      TEST_DATABASE_URL: postgresql://vuln:password@db-test:5432/vuln_test
     ports:
       - "4001:3001"
     volumes:
