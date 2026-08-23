@@ -8,7 +8,21 @@
 		},
 		"dev": {
 			"cache": false,
-			"persistent": true
+			"persistent": true,
+			"env": ["DATABASE_URL", "TEST_DATABASE_URL", "CORS_ORIGIN"]
+		},
+		"test": {
+			"outputs": [],
+			"env": ["DATABASE_URL", "TEST_DATABASE_URL", "CORS_ORIGIN"]
+		},
+		"test:watch": {
+			"cache": false,
+			"persistent": true,
+			"env": ["DATABASE_URL", "TEST_DATABASE_URL", "CORS_ORIGIN"]
+		},
+		"test:coverage": {
+			"outputs": ["../../coverage/**"],
+			"env": ["DATABASE_URL", "TEST_DATABASE_URL", "CORS_ORIGIN"]
 		}
 	}
 }

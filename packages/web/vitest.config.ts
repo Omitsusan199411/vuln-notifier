@@ -7,7 +7,6 @@ export default defineConfig({
 		tsconfigPaths: true,
 	},
 	test: {
-		// "test:api": "vitest run --project web"でapiだけをテスト対象とするために、nameを指定
 		name: "web",
 		environment: "jsdom",
 		// testing-libraryのマッチャー等をvitestで使えるようにするため
@@ -20,6 +19,7 @@ export default defineConfig({
 		coverage: {
 			provider: "v8",
 			reporter: ["text", "html"],
+			reportsDirectory: "../../coverage/web",
 			thresholds: {
 				lines: 60,
 				functions: 60,
