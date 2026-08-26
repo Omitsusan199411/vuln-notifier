@@ -5,6 +5,11 @@ import { batchFactory } from "@/testing/factories/persisted/batch.js";
 import { userFactory } from "@/testing/factories/persisted/user.js";
 
 describe("Prisma Batch Integration Test", () => {
+	let repository: PrismaBatchRepository;
+
+	beforeEach(() => {
+		repository = new PrismaBatchRepository();
+	});
 	describe("findByテスト", () => {
 		it("DBに存在するbatchIdを渡した場合、該当するBatchオブジェクトを返すこと", async () => {
 			const repository = new PrismaBatchRepository();
@@ -27,12 +32,6 @@ describe("Prisma Batch Integration Test", () => {
 	});
 
 	describe("fetchListテスト", () => {
-		let repository: PrismaBatchRepository;
-
-		beforeEach(() => {
-			repository = new PrismaBatchRepository();
-		});
-
 		it("cursorで指定した場合、指定したIDの次のIDのbatchレコードから取得されること", async () => {
 			await batchFactory.createList(5);
 
@@ -218,6 +217,29 @@ describe("Prisma Batch Integration Test", () => {
 				expect(lastCursor).not.toBeNull();
 				expect(lastCursor).toEqual(batches.at(-1)?.id);
 			});
+		});
+	});
+	describe("createテスト", () => {
+		it("batchレコードが新規作成されること", async () => {
+			const user = await userFactory.create();
+			const newBatch = batchFactory.build({ triggeredBy: user.id });
+
+			const createdBatch = await repository.create(newBatch);
+
+			expect(createdBatch.id).toBeDefined();
+			expect(createdBatch.triggerType).toBe(newBatch.triggerType);
+			expect(createdBatch.triggeredBy).toBe(user.id);
+			expect(createdBatch.executedAt).toEqual(newBatch.executedAt);
+			expect(createdBatch.status).toBe(newBatch.status);
+
+			const found = await repository.findById(createdBatch.id ?? "");
+			expect(found?.id).toBe(createdBatch.id);
+		});
+
+		it("triggeredByに存在しないユーザーIDを指定した場合、エラーになること", async () => {
+			const newBatch = batchFactory.build({ triggeredBy: "存在しないID" });
+
+			await expect(repository.create(newBatch)).rejects.toThrow();
 		});
 	});
 });
