@@ -4,6 +4,8 @@ FROM node:24-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends openssh-client && rm -rf /var/lib/apt/lists/*
 
 # node:24-slim に既存の node ユーザー(UID 1000)と衝突しないUIDを使う
+# ホームディレクトリは、devcontainer.jsonでホストの~/.ssh・~/.gitconfigを
+# /home/vscode配下にバインドマウントしてgit pushできるようにするために必要
 RUN useradd -u 1001 -m -s /bin/bash vscode && chown -R vscode:vscode /home/vscode
 
 ENV PATH=/workspace/node_modules/.bin/:/workspace/packages/api/node_modules/.bin:/workspace/packages/web/node_modules/.bin:$PATH
@@ -16,7 +18,7 @@ USER vscode
 
 WORKDIR /workspace
 
-# node_modulesは名前付きボリュームとしてマウントされる。パスが存在しないとDockerがroot所有で自動作成してしまい、
+# node_modulesは名前付きボリュームとしてマウントされる。node_modulesのディレクトリが存在しないとDockerがroot所有で自動作成してしまい、
 # vscodeユーザーで実行するpnpm installが権限エラーになるため、先にvscode所有で作成しておく
 RUN mkdir -p node_modules
 
