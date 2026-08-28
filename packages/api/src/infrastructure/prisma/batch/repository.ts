@@ -25,24 +25,24 @@ export class PrismaBatchRepository implements BatchRepository {
 
 	async fetchList(params: {
 		cursor?: string;
-		limit: number;
+		limit?: number;
 		triggerType?: BatchTriggerType;
 		triggeredBy?: string | null; // nullの場合は「自動バッチを意味する」
 		executedAt?: Date;
 		status?: BatchStatus;
-		sort: "desc" | "asc";
+		sort?: "desc" | "asc";
 	}): Promise<{
 		batches: Batch[];
 		lastCursor: string | null;
 	}> {
 		const {
 			cursor,
-			limit,
+			limit = 10,
 			triggerType,
 			triggeredBy,
 			executedAt,
 			status,
-			sort,
+			sort = "desc",
 		} = params;
 
 		const paginationParams = buildCursorQueryOptions({
