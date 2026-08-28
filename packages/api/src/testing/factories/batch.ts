@@ -6,7 +6,7 @@ import type {
 } from "@/domain/batch/entity.type.js";
 
 // DBに保存済みのレコードを再現する。build専用（onCreateは無く、DBには触らない）
-export const reconstructedBatchFactory =
+export const reconstructedBatchDomainFactory =
 	Factory.define<ReconstructedBatchProps>(() => ({
 		id: faker.string.uuid({ version: 7 }),
 		triggerType: "manual",
@@ -16,7 +16,7 @@ export const reconstructedBatchFactory =
 	}));
 
 // 新規作成前のBatchの形を組み立てる。build専用（onCreateは無く、DBには触らない）
-export const newBatchFactory = Factory.define<NewBatchProps>(() => ({
+export const newBatchDomainFactory = Factory.define<NewBatchProps>(() => ({
 	triggerType: "manual",
 	triggeredBy: faker.string.nanoid(),
 	executedAt: faker.date.recent(),

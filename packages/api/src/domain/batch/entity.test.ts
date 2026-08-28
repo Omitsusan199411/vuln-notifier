@@ -5,8 +5,8 @@ import type {
 	ReconstructedBatchProps,
 } from "@/domain/batch/entity.type.js";
 import {
-	newBatchFactory,
-	reconstructedBatchFactory,
+	newBatchDomainFactory,
+	reconstructedBatchDomainFactory,
 } from "@/testing/factories/batch.js";
 
 describe("Batch Entity Unit Test", () => {
@@ -15,7 +15,7 @@ describe("Batch Entity Unit Test", () => {
 		let batch: Batch;
 
 		beforeAll(() => {
-			props = newBatchFactory.build();
+			props = newBatchDomainFactory.build();
 			batch = Batch.create(props);
 		});
 
@@ -37,7 +37,7 @@ describe("Batch Entity Unit Test", () => {
 		let batch: Batch;
 
 		beforeAll(() => {
-			props = reconstructedBatchFactory.build();
+			props = reconstructedBatchDomainFactory.build();
 			batch = Batch.reconstruct(props);
 		});
 
@@ -54,7 +54,7 @@ describe("Batch Entity Unit Test", () => {
 	describe("updateStatusメソッド", () => {
 		it("pendingに更新されること", () => {
 			const batch = Batch.reconstruct(
-				reconstructedBatchFactory.build({ status: "failed" }),
+				reconstructedBatchDomainFactory.build({ status: "failed" }),
 			);
 			const assertStatus = "pending";
 			batch.updateStatus(assertStatus);
@@ -62,7 +62,7 @@ describe("Batch Entity Unit Test", () => {
 		});
 		it("runnningに更新されること", () => {
 			const batch = Batch.reconstruct(
-				reconstructedBatchFactory.build({ status: "pending" }),
+				reconstructedBatchDomainFactory.build({ status: "pending" }),
 			);
 			const assertStatus = "running";
 			batch.updateStatus(assertStatus);
@@ -70,7 +70,7 @@ describe("Batch Entity Unit Test", () => {
 		});
 		it("successに更新されること", () => {
 			const batch = Batch.reconstruct(
-				reconstructedBatchFactory.build({ status: "running" }),
+				reconstructedBatchDomainFactory.build({ status: "running" }),
 			);
 			const assertStatus = "success";
 			batch.updateStatus(assertStatus);
@@ -78,7 +78,7 @@ describe("Batch Entity Unit Test", () => {
 		});
 		it("failedに更新されること", () => {
 			const batch = Batch.reconstruct(
-				reconstructedBatchFactory.build({ status: "running" }),
+				reconstructedBatchDomainFactory.build({ status: "running" }),
 			);
 			const assertStatus = "failed";
 			batch.updateStatus(assertStatus);
