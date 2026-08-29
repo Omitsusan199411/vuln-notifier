@@ -25,6 +25,7 @@ export default defineConfig({
 					name: "api-integration",
 					include: ["src/infrastructure/prisma/**/*.test.ts"], // 外部ツール（DB）使うテストは統合テストとして扱う
 					setupFiles: ["./vitest.setup.ts"],
+					globalSetup: ["./vitest.global-setup.ts"],
 				},
 			},
 			{
