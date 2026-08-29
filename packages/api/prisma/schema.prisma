@@ -55,6 +55,25 @@ enum AdvisorySource {
   @@map("advisory_source")
 }
 
+// ecosystemの種別
+enum EcosystemName {
+  rubygems
+  npm
+  pip
+  maven
+  nuget
+  composer
+  go
+  rust
+  erlang
+  actions
+  pub
+  other
+  swift
+
+  @@map("ecosystem_name")
+}
+
 // ユーザーモデル
 model User {
   id         String   @id @default(nanoid())
@@ -72,7 +91,7 @@ model User {
 // エコシステム（パッケージ管理ツール）モデル
 model Ecosystem {
   id        String   @id @default(nanoid())
-  name      String   @unique
+  name      EcosystemName  @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

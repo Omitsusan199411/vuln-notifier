@@ -13,6 +13,9 @@ CREATE TYPE "notification_channel_type" AS ENUM ('line');
 -- CreateEnum
 CREATE TYPE "advisory_source" AS ENUM ('github');
 
+-- CreateEnum
+CREATE TYPE "ecosystem_name" AS ENUM ('rubygems', 'npm', 'pip', 'maven', 'nuget', 'composer', 'go', 'rust', 'erlang', 'actions', 'pub', 'other', 'swift');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
@@ -26,7 +29,7 @@ CREATE TABLE "users" (
 -- CreateTable
 CREATE TABLE "ecosystems" (
     "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "name" "ecosystem_name" NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
