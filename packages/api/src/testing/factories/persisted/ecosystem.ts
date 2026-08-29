@@ -1,10 +1,15 @@
-import { faker } from "@faker-js/faker";
 import { Factory } from "fishery";
-import type { Ecosystem } from "@/generated/prisma/client.js";
+import type { ReconstructedEcosystemProps } from "@/domain/ecosystem/entity.type.js";
+import type { Ecosystem as EcosystemRecord } from "@/generated/prisma/client.js";
 import { Prisma } from "@/generated/prisma/client.js";
 import prisma from "@/lib/prisma.js";
+import { reconstructedEcosystemDomainFactory } from "@/testing/factories/ecosystem.js";
 
-export const ecosystemFactory = Factory.define<Ecosystem>(({ onCreate }) => {
+export const ecosystemFactory = Factory.define<
+	ReconstructedEcosystemProps,
+	unknown,
+	EcosystemRecord
+>(({ onCreate }) => {
 	// ecosystemはマスタデータで重複作成する必要が無いため、name重複時は既存レコードを取得する。
 	// 並列でcreateが呼ばれた場合の競合(unique制約違反)にも対応するため、
 	// upsertではなく「作成を試して、負けたら既存を取得する」形にしている
@@ -24,10 +29,5 @@ export const ecosystemFactory = Factory.define<Ecosystem>(({ onCreate }) => {
 		}
 	});
 
-	return {
-		id: faker.string.nanoid(),
-		name: "npm",
-		createdAt: faker.date.recent(),
-		updatedAt: faker.date.recent(),
-	};
+	return reconstructedEcosystemDomainFactory.build();
 });
