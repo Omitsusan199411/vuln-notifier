@@ -11,7 +11,7 @@ describe("Prisma Batch Integration Test", () => {
 		repository = new PrismaBatchRepository();
 	});
 	describe("findByテスト", () => {
-		it("DBに存在するbatchIdを渡した場合、該当するBatchオブジェクトを返すこと", async () => {
+		it("DBに存在するbatchIdを渡した場合、該当するBatchレコードを返すこと", async () => {
 			const createdBatch = await batchFactory.create();
 
 			const batch = await repository.findById(createdBatch.id);
