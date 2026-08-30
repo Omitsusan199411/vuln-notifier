@@ -1,16 +1,22 @@
-import { faker } from "@faker-js/faker";
 import { Factory } from "fishery";
-import type { User } from "@/generated/prisma/client.js";
+import { User } from "@/domain/user/entity.js";
+import type { NewUserProps } from "@/domain/user/entity.type.js";
+import type { User as UserRecord } from "@/generated/prisma/client.js";
+import { PrismaUserMapper } from "@/infrastructure/prisma/user/mapper.js";
 import prisma from "@/lib/prisma.js";
+import { newUserPropsFactory } from "@/testing/factories/user.js";
 
-export const userFactory = Factory.define<User>(({ onCreate }) => {
-	// create()実行時だけ呼ばれる保存処理を登録。引数userには下のreturnで組み立てたオブジェクトがそのまま渡ってくる(fishery仕様)
-	onCreate((user) => prisma.user.create({ data: user }));
+export const userFactory = Factory.define<NewUserProps, unknown, UserRecord>(
+	({ onCreate }) => {
+		// create()実行時だけ呼ばれる保存処理を登録。引数userには下のreturnで組み立てたオブジェクトがそのまま渡ってくる(fishery仕様)
+		onCreate(async (user) => {
+			const data = PrismaUserMapper.toCreatePersistence(User.create(user));
 
-	return {
-		id: faker.string.nanoid(),
-		cognitoSub: faker.string.uuid(),
-		createdAt: faker.date.recent(),
-		updatedAt: faker.date.recent(),
-	};
-});
+			return await prisma.user.create({
+				data,
+			});
+		});
+
+		return newUserPropsFactory.build();
+	},
+);
