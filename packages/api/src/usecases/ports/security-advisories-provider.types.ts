@@ -1,7 +1,7 @@
 import type {
 	AdvisorySource,
 	Severity,
-} from "@/domain/vulnerability/entity.types.js";
+} from "@/domain/vulnerability/entity.type.js";
 
 // ベンダー非依存（GitHub/OSV等の実際のクエリ形式への変換は各Client実装の内部で行う）。
 export interface SecurityAdvisoriesSearchParams {
