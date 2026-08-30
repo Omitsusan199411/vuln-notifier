@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Ecosystem } from "@/domain/ecosystem/entity.js";
 import type { ReconstructedEcosystemProps } from "@/domain/ecosystem/entity.type.js";
-import { reconstructedEcosystemDomainFactory } from "@/testing/factories/ecosystem.js";
+import { reconstructedEcosystemPropsFactory } from "@/testing/factories/ecosystem.js";
 
 describe("Ecosystem Entity Unit Test", () => {
 	describe("reconstructメソッド", () => {
@@ -9,7 +9,7 @@ describe("Ecosystem Entity Unit Test", () => {
 		let ecosystem: Ecosystem;
 
 		beforeAll(() => {
-			props = reconstructedEcosystemDomainFactory.build();
+			props = reconstructedEcosystemPropsFactory.build();
 			ecosystem = Ecosystem.reconstruct(props);
 		});
 
