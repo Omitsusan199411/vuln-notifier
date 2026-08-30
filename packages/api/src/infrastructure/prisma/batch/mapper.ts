@@ -1,25 +1,35 @@
 import { Batch } from "@/domain/batch/entity.js";
-import type { ReconstructedBatchProps } from "@/domain/batch/entity.type.js";
-import type { Prisma } from "@/generated/prisma/client.js";
+import type {
+	Batch as BatchRecord,
+	Prisma,
+} from "@/generated/prisma/client.js";
 
 export class PrismaBatchMapper {
 	// レコードからエンティティへ変換
-	static toDomain(record: ReconstructedBatchProps): Batch {
-		return Batch.reconstruct(record);
+	static toDomain(record: BatchRecord): Batch {
+		const { id, triggerType, triggeredBy, executedAt, status } = record;
+		return Batch.reconstruct({
+			id,
+			triggerType,
+			triggeredBy,
+			executedAt,
+			status,
+		});
 	}
 
-	// エンティティからPrismaが永続化できる形へ変換。フィールドがprivateなgetter越しにしか読めないため、
+	// ドメインエンティティをPrismaが永続化できる形へ整形する。
 	// Prismaが要求するキー名のプレーンな値に詰め替える必要がある
 	static toCreatePersistence(batch: Batch): Prisma.BatchCreateInput {
+		const { triggerType, triggeredBy, executedAt, status } = batch;
 		return {
-			triggerType: batch.triggerType,
-			user: batch.triggeredBy
+			triggerType,
+			user: triggeredBy
 				? {
-						connect: { id: batch.triggeredBy },
+						connect: { id: triggeredBy },
 					}
 				: undefined,
-			executedAt: batch.executedAt,
-			status: batch.status,
+			executedAt,
+			status,
 		};
 	}
 }
