@@ -2,7 +2,6 @@ import type { Batch } from "@/domain/batch/entity.js";
 import type {
 	BatchStatus,
 	BatchTriggerType,
-	NewBatchProps,
 } from "@/domain/batch/entity.type.js";
 
 export interface BatchRepository {
@@ -19,5 +18,5 @@ export interface BatchRepository {
 		batches: Batch[];
 		lastCursor: string | null;
 	}>;
-	create(props: NewBatchProps): Promise<Batch>;
+	create(batch: Batch): Promise<Batch>;
 }

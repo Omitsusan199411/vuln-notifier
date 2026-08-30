@@ -1,5 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { beforeEach, describe, expect, it } from "vitest";
+import { Batch } from "@/domain/batch/entity.js";
 import { PrismaBatchRepository } from "@/infrastructure/prisma/batch/repository.js";
 import { batchFactory } from "@/testing/factories/persisted/batch.js";
 import { userFactory } from "@/testing/factories/persisted/user.js";
@@ -221,7 +222,9 @@ describe("Prisma Batch Integration Test", () => {
 	describe("createテスト", () => {
 		it("batchレコードが新規作成されること", async () => {
 			const user = await userFactory.create();
-			const newBatch = batchFactory.build({ triggeredBy: user.id });
+			const newBatch = Batch.create(
+				batchFactory.build({ triggeredBy: user.id }),
+			);
 
 			const createdBatch = await repository.create(newBatch);
 
@@ -236,7 +239,9 @@ describe("Prisma Batch Integration Test", () => {
 		});
 
 		it("triggeredByに存在しないユーザーIDを指定した場合、エラーになること", async () => {
-			const newBatch = batchFactory.build({ triggeredBy: "存在しないID" });
+			const newBatch = Batch.create(
+				batchFactory.build({ triggeredBy: "存在しないID" }),
+			);
 
 			await expect(repository.create(newBatch)).rejects.toThrow();
 		});

@@ -1,8 +1,7 @@
-import { Batch } from "@/domain/batch/entity.js";
+import type { Batch } from "@/domain/batch/entity.js";
 import type {
 	BatchStatus,
 	BatchTriggerType,
-	NewBatchProps,
 } from "@/domain/batch/entity.type.js";
 import type { BatchRepository } from "@/domain/batch/repository.js";
 import { PrismaBatchMapper } from "@/infrastructure/prisma/batch/mapper.js";
@@ -77,14 +76,11 @@ export class PrismaBatchRepository implements BatchRepository {
 		return { batches, lastCursor };
 	}
 
-	async create(props: NewBatchProps): Promise<Batch> {
-		const batch = Batch.create(props);
+	async create(batch: Batch): Promise<Batch> {
 		const data = PrismaBatchMapper.toCreatePersistence(batch);
 		const createdBatch = await prisma.batch.create({
 			data,
 		});
-		const domain = PrismaBatchMapper.toDomain(createdBatch);
-
-		return domain;
+		return PrismaBatchMapper.toDomain(createdBatch);
 	}
 }
