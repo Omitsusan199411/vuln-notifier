@@ -35,7 +35,7 @@ export class PrismaUserRepository implements UserRepository {
 
 		const fetchedUsers = await prisma.user.findMany({
 			orderBy: {
-				id: sort,
+				createdAt: sort,
 			},
 			...paginationParams,
 		});

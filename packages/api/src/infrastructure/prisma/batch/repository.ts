@@ -57,7 +57,7 @@ export class PrismaBatchRepository implements BatchRepository {
 				status: status,
 			},
 			orderBy: {
-				id: sort,
+				createdAt: sort,
 			},
 			...paginationParams,
 		});
