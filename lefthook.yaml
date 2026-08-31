@@ -3,6 +3,10 @@ pre-commit:
     check:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: pnpm run check {staged_files}
+    # TODO: レビューする仕組みを考え直す
+    # llm-review:
+    #   glob: "packages/**/*.{ts,tsx}"
+    #   run: .claude/scripts/llm-review.sh
 
 pre-push:
   commands:
