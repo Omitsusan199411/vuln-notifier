@@ -16,10 +16,17 @@ CREATE TYPE "advisory_source" AS ENUM ('github');
 -- CreateEnum
 CREATE TYPE "ecosystem_name" AS ENUM ('rubygems', 'npm', 'pip', 'maven', 'nuget', 'composer', 'go', 'rust', 'erlang', 'actions', 'pub', 'other', 'swift');
 
+-- CreateEnum
+CREATE TYPE "role" AS ENUM ('admin', 'general');
+
+-- CreateEnum
+CREATE TYPE "sort_order" AS ENUM ('desc', 'asc');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "cognito_sub" TEXT NOT NULL,
+    "role" "role" NOT NULL DEFAULT 'general',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -34,22 +41,6 @@ CREATE TABLE "ecosystems" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "ecosystems_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "vulnerability_configs" (
-    "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
-    "ecosystem_id" TEXT NOT NULL,
-    "min_severity" "severity" NOT NULL DEFAULT 'high',
-    "min_cvss_score" DECIMAL(3,1) NOT NULL DEFAULT 7.0,
-    "published_lookback_days" INTEGER NOT NULL DEFAULT 30,
-    "max_fetch_count" INTEGER NOT NULL DEFAULT 10,
-    "published_order_by" TEXT NOT NULL DEFAULT 'desc',
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "vulnerability_configs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -95,6 +86,11 @@ CREATE TABLE "notification_channels" (
     "type" "notification_channel_type" NOT NULL,
     "max_notification_limit" INTEGER NOT NULL DEFAULT 10,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "min_severity" "severity" NOT NULL DEFAULT 'high',
+    "min_cvss_score" DOUBLE PRECISION NOT NULL DEFAULT 7.0,
+    "cvss_score_order_by" "sort_order" NOT NULL DEFAULT 'desc',
+    "notification_interval_minutes" INTEGER NOT NULL DEFAULT 1440,
+    "last_processed_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -125,17 +121,89 @@ CREATE TABLE "notifications" (
 );
 
 -- CreateTable
-CREATE TABLE "llm_monthly_usages" (
+CREATE TABLE "notification_channel_ecosystems" (
     "id" TEXT NOT NULL,
-    "year" INTEGER NOT NULL,
-    "month" INTEGER NOT NULL,
-    "input_tokens" INTEGER NOT NULL DEFAULT 0,
-    "output_tokens" INTEGER NOT NULL DEFAULT 0,
-    "cost_usd" DECIMAL(65,30) NOT NULL DEFAULT 0,
+    "notification_channel_id" TEXT NOT NULL,
+    "ecosystem_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "llm_monthly_usages_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "notification_channel_ecosystems_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "llm_models" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "llm_models_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "app_llm_token_usages" (
+    "id" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "month" INTEGER NOT NULL,
+    "model_id" TEXT NOT NULL,
+    "input_tokens" INTEGER NOT NULL DEFAULT 0,
+    "output_tokens" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "app_llm_token_usages_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_llm_token_usages" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "year" INTEGER NOT NULL,
+    "month" INTEGER NOT NULL,
+    "model_id" TEXT NOT NULL,
+    "input_tokens" INTEGER NOT NULL DEFAULT 0,
+    "output_tokens" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_llm_token_usages_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_llm_token_budgets" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "monthly_token_budget" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_llm_token_budgets_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "vulnerability_auto_fetch_settings" (
+    "id" TEXT NOT NULL,
+    "interval_minutes" INTEGER NOT NULL DEFAULT 60,
+    "max_fetch_count" INTEGER NOT NULL DEFAULT 100,
+    "lookback_days" INTEGER NOT NULL DEFAULT 1,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "vulnerability_auto_fetch_settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "vulnerability_manual_fetch_settings" (
+    "id" TEXT NOT NULL,
+    "max_fetch_count" INTEGER NOT NULL DEFAULT 30,
+    "max_lookback_days" INTEGER NOT NULL DEFAULT 1,
+    "min_interval_minutes" INTEGER NOT NULL DEFAULT 60,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "vulnerability_manual_fetch_settings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -143,15 +211,6 @@ CREATE UNIQUE INDEX "users_cognito_sub_key" ON "users"("cognito_sub");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ecosystems_name_key" ON "ecosystems"("name");
-
--- CreateIndex
-CREATE INDEX "vulnerability_configs_user_id_updated_at_idx" ON "vulnerability_configs"("user_id", "updated_at");
-
--- CreateIndex
-CREATE INDEX "vulnerability_configs_updated_at_idx" ON "vulnerability_configs"("updated_at");
-
--- CreateIndex
-CREATE UNIQUE INDEX "vulnerability_configs_user_id_ecosystem_id_key" ON "vulnerability_configs"("user_id", "ecosystem_id");
 
 -- CreateIndex
 CREATE INDEX "vulnerabilities_updated_at_idx" ON "vulnerabilities"("updated_at");
@@ -187,13 +246,19 @@ CREATE INDEX "notifications_notified_at_idx" ON "notifications"("notified_at");
 CREATE INDEX "notifications_notification_channel_id_created_at_idx" ON "notifications"("notification_channel_id", "created_at");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "llm_monthly_usages_year_month_key" ON "llm_monthly_usages"("year", "month");
+CREATE UNIQUE INDEX "notification_channel_ecosystems_notification_channel_id_eco_key" ON "notification_channel_ecosystems"("notification_channel_id", "ecosystem_id");
 
--- AddForeignKey
-ALTER TABLE "vulnerability_configs" ADD CONSTRAINT "vulnerability_configs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- CreateIndex
+CREATE UNIQUE INDEX "llm_models_name_key" ON "llm_models"("name");
 
--- AddForeignKey
-ALTER TABLE "vulnerability_configs" ADD CONSTRAINT "vulnerability_configs_ecosystem_id_fkey" FOREIGN KEY ("ecosystem_id") REFERENCES "ecosystems"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- CreateIndex
+CREATE UNIQUE INDEX "app_llm_token_usages_model_id_year_month_key" ON "app_llm_token_usages"("model_id", "year", "month");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_llm_token_usages_user_id_model_id_year_month_key" ON "user_llm_token_usages"("user_id", "model_id", "year", "month");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_llm_token_budgets_user_id_key" ON "user_llm_token_budgets"("user_id");
 
 -- AddForeignKey
 ALTER TABLE "vulnerabilities" ADD CONSTRAINT "vulnerabilities_ecosystem_id_fkey" FOREIGN KEY ("ecosystem_id") REFERENCES "ecosystems"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -215,3 +280,21 @@ ALTER TABLE "notifications" ADD CONSTRAINT "notifications_notification_channel_i
 
 -- AddForeignKey
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_vulnerability_id_fkey" FOREIGN KEY ("vulnerability_id") REFERENCES "vulnerabilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notification_channel_ecosystems" ADD CONSTRAINT "notification_channel_ecosystems_notification_channel_id_fkey" FOREIGN KEY ("notification_channel_id") REFERENCES "notification_channels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notification_channel_ecosystems" ADD CONSTRAINT "notification_channel_ecosystems_ecosystem_id_fkey" FOREIGN KEY ("ecosystem_id") REFERENCES "ecosystems"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "app_llm_token_usages" ADD CONSTRAINT "app_llm_token_usages_model_id_fkey" FOREIGN KEY ("model_id") REFERENCES "llm_models"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_llm_token_usages" ADD CONSTRAINT "user_llm_token_usages_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_llm_token_usages" ADD CONSTRAINT "user_llm_token_usages_model_id_fkey" FOREIGN KEY ("model_id") REFERENCES "llm_models"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_llm_token_budgets" ADD CONSTRAINT "user_llm_token_budgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

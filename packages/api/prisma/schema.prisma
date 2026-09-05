@@ -74,16 +74,32 @@ enum EcosystemName {
   @@map("ecosystem_name")
 }
 
+enum Role {
+  admin
+  general
+
+  @@map("role")
+}
+
+enum SortOrder {
+  desc
+  asc
+
+  @@map("sort_order")
+}
+
 // ユーザーモデル
 model User {
   id         String   @id @default(nanoid())
   cognitoSub String   @unique @map("cognito_sub")
+  role Role @default(general)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  vulnerabilityConfigs VulnerabilityConfig[]
   batches              Batch[]
   notificationChannels NotificationChannel[]
+  userLlmTokenUsages UserLlmTokenUsage[]
+  userLlmTokenBudget UserLlmTokenBudget?
 
   @@map("users")
 }
@@ -95,32 +111,10 @@ model Ecosystem {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  vulnerabilityConfigs VulnerabilityConfig[]
   vulnerabilities      Vulnerability[]
+  notificationChannelEcosystems NotificationChannelEcosystem[]
 
   @@map("ecosystems")
-}
-
-// 脆弱性取得設定モデル
-model VulnerabilityConfig {
-  id                    String   @id @default(nanoid())
-  userId                String   @map("user_id")
-  ecosystemId           String   @map("ecosystem_id")
-  minSeverity           Severity @default(high) @map("min_severity")
-  minCvssScore          Decimal  @default(7.0) @map("min_cvss_score") @db.Decimal(3, 1)
-  publishedLookbackDays Int      @default(30) @map("published_lookback_days")
-  maxFetchCount         Int      @default(10) @map("max_fetch_count")
-  publishedOrderBy      String   @default("desc") @map("published_order_by")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, ecosystemId])
-  @@index([userId, updatedAt])
-  @@index([updatedAt])
-  @@map("vulnerability_configs")
 }
 
 model Vulnerability {
@@ -176,12 +170,18 @@ model NotificationChannel {
   type                 NotificationChannelType
   maxNotificationLimit Int                     @default(10) @map("max_notification_limit")
   enabled              Boolean                 @default(true)
+  minSeverity Severity @default(high) @map("min_severity")
+  minCvssScore            Float @default(7.0) @map("min_cvss_score")
+  cvssScoreOrderBy SortOrder @default(desc) @map("cvss_score_order_by")
+  notificationIntervalMinutes Int @default(1440) @map("notification_interval_minutes")
+  lastProcessedAt DateTime? @map("last_processed_at") 
   createdAt            DateTime                @default(now()) @map("created_at")
   updatedAt            DateTime                @updatedAt @map("updated_at")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   lineChannel   LineChannel?
   notifications Notification[]
+  notificationChannelEcosystems NotificationChannelEcosystem[]
 
   @@index([userId, enabled])
   @@map("notification_channels")
@@ -215,16 +215,100 @@ model Notification {
   @@map("notifications")
 }
 
-model LlmMonthlyUsage {
+model NotificationChannelEcosystem {
+  id String @id @default(nanoid())
+  notificationChannelId String @map("notification_channel_id")
+  ecosystemId String @map("ecosystem_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  notificationChannel NotificationChannel @relation(fields: [notificationChannelId], references: [id], onDelete: Cascade)
+  ecosystem Ecosystem @relation(fields: [ecosystemId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationChannelId, ecosystemId])
+
+  @@map("notification_channel_ecosystems")
+}
+
+model LlmModel {
+  id String @id @default(nanoid())
+  name String @unique
+  enabled Boolean @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  appLlmTokenUsages AppLlmTokenUsage[]
+  userLlmTokenUsages UserLlmTokenUsage[]
+
+  @@map("llm_models")
+}
+
+model AppLlmTokenUsage {
   id           String   @id @default(nanoid())
   year         Int
   month        Int
+  modelId String @map("model_id")
   inputTokens  Int      @default(0) @map("input_tokens")
   outputTokens Int      @default(0) @map("output_tokens")
-  costUsd      Decimal  @default(0) @map("cost_usd")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  @@unique([year, month])
-  @@map("llm_monthly_usages")
+  llmModel LlmModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([modelId, year, month])
+  @@map("app_llm_token_usages")
+}
+
+model UserLlmTokenUsage {
+  id String @id @default(nanoid())
+  userId String @map("user_id")
+  year Int
+  month Int
+  modelId String @map("model_id")
+  inputTokens  Int      @default(0) @map("input_tokens")
+  outputTokens Int      @default(0) @map("output_tokens") 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  llmModel LlmModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, modelId, year, month])
+  @@map("user_llm_token_usages")
+}
+
+model UserLlmTokenBudget{
+  id String @id @default(nanoid())
+  userId String @unique @map("user_id")
+  monthlyTokenBudget Int @map("monthly_token_budget")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_llm_token_budgets")
+
+}
+
+model VulnerabilityAutoFetchSetting {
+  id String @id @default(nanoid())
+  intervalMinutes Int @default(60) @map("interval_minutes")
+  maxFetchCount Int @default(100) @map("max_fetch_count")
+  lookbackDays Int @default(1) @map("lookback_days")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("vulnerability_auto_fetch_settings")
+}
+
+model VulnerabilityManualFetchSetting {
+  id String @id @default(nanoid())
+  maxFetchCount Int @default(30) @map("max_fetch_count")
+  maxLookbackDays Int @default(1) @map("max_lookback_days")
+  minIntervalMinutes Int @default(60) @map("min_interval_minutes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("vulnerability_manual_fetch_settings")
 }
