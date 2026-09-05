@@ -42,4 +42,17 @@ describe("User Entity Unit Test", () => {
 			expect(user.cognitoSub).toBe(cognitoSub);
 		});
 	});
+
+	describe("isAdmin", () => {
+		it("Userインスタンスのroleプロパティが管理者（admin）の場合はtrueを返すこと", () => {
+			const props = reconstructedUserPropsFactory.build();
+			const user = User.reconstruct(props);
+			expect(user.isAdmin()).toBe(true);
+		});
+		it("Userインスタンスのoleプロパティが一般ユーザー（general）の場合はtrueを返すこと", () => {
+			const props = reconstructedUserPropsFactory.build({ role: "general" });
+			const user = User.reconstruct(props);
+			expect(user.isAdmin()).toBe(false);
+		});
+	});
 });
