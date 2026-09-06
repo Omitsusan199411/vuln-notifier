@@ -27,11 +27,11 @@ export class User {
 		return this._role;
 	}
 
-	static create(props: NewUserProps) {
+	static create(props: NewUserProps): User {
 		return new User(props);
 	}
 
-	static reconstruct(props: ReconstructedUserProps) {
+	static reconstruct(props: ReconstructedUserProps): User {
 		return new User(props);
 	}
 
