@@ -1,6 +1,6 @@
 export interface ReconstructedLineChannelProps {
 	readonly id: string;
-	notificationChannelId: string;
+	readonly notificationChannelId: string;
 	lineUserId: string;
 }
 
