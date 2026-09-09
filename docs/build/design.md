@@ -16,7 +16,9 @@
 
 ### 役割
 
-Prisma から自動生成された Zod スキーマを提供するパッケージです。api・web の両方から参照されます。
+**将来計画**: Prisma から自動生成された Zod スキーマを提供し、api・web の両方から参照されるパッケージとする予定です。
+
+**現状**: Zod スキーマの自動生成は未実装で、`src/index.ts` は空ファイルです（詳細は後述）。
 
 ### package.json
 
@@ -78,7 +80,9 @@ Node.js 素（本番）:      source/types なし → import にフォールバ�
 
 ### src/index.ts（バレルファイル）
 
-`src/index.ts` は shared の公開 API の窓口であり、`generated/` 配下を re-export する。外部（api・web）は常に `@repo/shared` からのみ import する方針とし、`@repo/shared/src/generated/...` のような内部パスへの直接 import は禁止する。直接パスを import すると、shared の内部構造を変更した時に api・web 側も修正が必要になり、バレルファイルを設けた意味が失われるため。
+**現状**: `src/index.ts` は空ファイルです。何も生成・export していません。
+
+**将来計画**: `src/index.ts` を shared の公開 API の窓口とし、`generated/` 配下（Prisma から自動生成される Zod スキーマ）を re-export する計画です。外部（api・web）は常に `@repo/shared` からのみ import する方針とし、`@repo/shared/src/generated/...` のような内部パスへの直接 import は禁止する。直接パスを import すると、shared の内部構造を変更した時に api・web 側も修正が必要になり、バレルファイルを設けた意味が失われるため。
 
 shared に新しいファイルを追加した場合は、`src/index.ts` に re-export を1行追加する。外部からの import パス（`@repo/shared`）自体は変わらない。
 
@@ -101,9 +105,11 @@ tsx が Node.js の module loader に esbuild のフックを登録し、`.ts` �
 ### 本番環境
 
 ```bash
-tsc        # TypeScript を dist/ にコンパイル
-node dist/index.js  # 起動
+prisma generate && tsc -p tsconfig.build.json  # Prisma Client 生成 → dist/ にコンパイル
+node dist/index.js                              # 起動
 ```
+
+`tsconfig.build.json` は `tsconfig.json` を継承し、テストファイル（`src/**/*.test.ts`）や `src/testing/` 配下を `exclude` することで、本番ビルドにテストコードを含めないようにしています。
 
 ### tsconfig.json
 
@@ -135,7 +141,7 @@ web は tsc でビルドしません。`next build` が webpack を通じて Typ
 
 `transpilePackages` で「@repo/shared だけは TypeScript としてコンパイルしてください」と指示します。
 
-`webpack.conditionNames` に `source` を追加することで、`next dev` 時に webpack が shared の `source` 条件（`./src/index.ts`）を認識できます。これがないと webpack は `import` 条件（`./dist/index.js`）を探しますが、開発時は `dist/` が存在しないためエラーになります。
+`webpack.conditionNames` に `source` を追加することで、`next dev` 時に webpack が shared の `source` 条件（`./src/index.ts`）を認識できます。これがないと webpack は `import` 条件（`./dist/index.js`）を探しますが、開発時は `dist/` が存在しないためエラーになります。この `webpack` 設定が適用されるのは、`dev` スクリプトが `next dev --webpack` のように `--webpack` を明示的に指定しているためです（Next.js 16 ではデフォルトバンドラーが変更されたため、webpack を使うにはこの指定が必要です）。
 
 > **注意**: `source` 条件は tsx・Vite・webpack などのツールが認識する慣習的な条件名です。Next.js 16 での動作は実装後に確認が必要です。
 
@@ -170,8 +176,8 @@ turbo dev
 
 ```
 1. pnpm install
-2. prisma generate        ← shared/src/generated を生成
-3. tsc --noEmit           ← shared のビルド不要（types → .ts を直読み）
+2. prisma generate        ← Prisma Client を生成（packages/api/src/generated）
+3. prisma migrate deploy  ← テスト用DBにマイグレーションを適用
 4. pnpm test:coverage     ← tsx で実行
 ```
 
@@ -185,7 +191,9 @@ turbo dev
 
 ---
 
-## 本番デプロイフロー（api）
+## 本番デプロイフロー（api）（将来計画）
+
+> **注意**: このセクションは設計案であり、現時点では未実装です。リポジトリに存在する Dockerfile は開発用の `Dockerfile.dev` のみで、本番用の Dockerfile や `pnpm deploy` によるスタンドアロン化は実装されていません。
 
 ### pnpm deploy によるスタンドアロン化
 

@@ -26,6 +26,8 @@
 | `一般ユーザー / 管理者` | どちらでも可 | - |
 | `スケジューラ` | M2M アクセストークンを持つシステム | - |
 
+**DB側の `role` カラムについて:** `User` テーブルには `role`（`Role` enum: `admin` / `general`）カラムが新設されている。Cognito グループとこの DB 上の `role` をどう整合させるか（どちらを正とするか、どうやって安全に同期・更新するか）は現時点で未決定。認可の仕組み自体も未整備であり、別タスクとして扱う（詳細は `docs/api/vulnerability-fetch-notify-plan.md` の Step 6 を参照）。
+
 ---
 
 ### 認証
@@ -66,22 +68,26 @@
 
 **備考:**
 - `POST /users` のボディは空。`cognitoSub` は検証済み JWT のペイロードからサーバー側で取得する。レスポンスに `id` を含め、クライアントは以降この `id` を使う。
-- 現時点で `User` に更新可能なフィールドがないため、`PUT /users/:user_id` は権限設計・スキーマ拡張後に実装する。
+- `User.role` フィールドが追加されたが、これを安全に更新するための認可設計（誰がどの条件で `role` を変更できるか）が未整備なため、`PUT /users/:user_id` の実装は見送っている。
 
 ---
 
-#### VulnerabilityConfigs
+#### 脆弱性の取得設定・通知条件
 
-| メソッド | パス | 説明 | 権限 |
-|---|---|---|---|
-| `GET` | `/users/:user_id/vulnerability-configs` | ユーザーの設定一覧取得 | 一般ユーザー / 管理者 |
-| `GET` | `/users/:user_id/vulnerability-configs/:ecosystem_id` | エコシステムごとの設定取得 | 一般ユーザー / 管理者 |
-| `PUT` | `/users/:user_id/vulnerability-configs/:ecosystem_id` | 設定の作成・更新（upsert） | 一般ユーザー / 管理者 |
-| `DELETE` | `/users/:user_id/vulnerability-configs/:ecosystem_id` | 設定削除 | 一般ユーザー / 管理者 |
+「取得（Fetch）」と「通知（Notify）」は関心事が異なるため、別々の設定として持つ（旧 `VulnerabilityConfig` はユーザー×エコシステム単位でこの2つを1テーブルに混在させていたため削除し、以下のように分割した）。エンドポイントは未実装（TODO）のため、ここでは基本設計のみ記載する。
 
-**備考:**
-- 1ユーザー × 1エコシステム = 1設定（DB に `@@unique([userId, ecosystemId])` 制約あり）。
-- `PUT` は存在しなければ作成、存在すれば更新。
+**① 脆弱性取得設定（システム共通・自動/手動）**
+
+取得はユーザー・エコシステムに依らずシステム全体で共通の1つの処理であり、ユーザー×エコシステム単位の設定は持たない。
+
+| モデル | 役割 |
+|---|---|
+| `VulnerabilityAutoFetchSetting` | 自動取得（スケジューラ実行）の設定（シングルトン1行）。取得間隔（`intervalMinutes`）・直近何日分を取得するか（`lookbackDays`）・最大取得件数（`maxFetchCount`）を持つ |
+| `VulnerabilityManualFetchSetting` | 一般ユーザーによる手動取得（`POST /batches`）に対する制限（シングルトン1行）。UIで指定できる取得件数・遡る日数の上限（`maxFetchCount`・`maxLookbackDays`）と、前回の手動実行からの最小間隔（`minIntervalMinutes`、クールダウン）を持つ。管理者はこの制限を受けない |
+
+**② 通知チャネル単位の通知条件**
+
+通知条件はユーザー×エコシステム単位ではなく、`NotificationChannel`（通知チャネル）単位で持つ。Severity・CVSSスコアの下限や対象エコシステム（複数選択可）などの詳細は後述の「NotificationChannels」セクションを参照。
 
 ---
 
@@ -101,6 +107,11 @@
 - `type` フィールドで通知種別を区別する（例: `1` = LINE）。
 - 現時点では LINE のみ実装。将来的に Slack・Email 等を追加できる設計。
 - LINE チャネルの連携方式（`lineUserId` の取得方法）は実装フェーズで別途設計する。
+- 通知条件はチャネル単位で持つ（ユーザー×エコシステム単位ではない）:
+  - `minSeverity`・`minCvssScore`: Severity・CVSSスコアの下限。両方の条件を満たす脆弱性のみ通知対象にする。
+  - `cvssScoreOrderBy`: 通知候補の並び順（`asc`/`desc`）。`maxNotificationLimit` 件を超えた候補がある場合、この並び順で上位から選ぶ（溢れた分は次回に持ち越さない）。
+  - `notificationIntervalMinutes`・`lastProcessedAt`: 通知処理を実行する間隔（分単位）と直前に処理した時刻。この2つから次回の実行タイミングを判定する。
+  - 対象エコシステムは `NotificationChannelEcosystem`（中間テーブル）で複数選択できる。1チャネルに対して複数エコシステムを紐づけられるため、エコシステムごとに個別のチャネルを作る必要はない。
 
 ---
 
@@ -123,9 +134,10 @@
 
 **備考:**
 - `POST /batches` の呼び出し元によって挙動が変わる:
-  - 一般ユーザー / 管理者 → JWT から user_id を取得し、**自分の** `VulnerabilityConfig` のみを対象に実行（`triggerType`: 手動）
-  - スケジューラ → 全ユーザーの `VulnerabilityConfig` を対象に実行（`triggerType`: スケジューラ）
-- 管理者が全ユーザー分を実行したい場合はスケジューラ経由のみ。管理者の手動実行も自分のみを対象とする。
+  - 一般ユーザー → JWT から user_id を取得し手動実行（`triggerType`: 手動）。`VulnerabilityManualFetchSetting` の `maxFetchCount`（指定できる取得件数の上限）・`maxLookbackDays`（遡れる日数の上限）・`minIntervalMinutes`（前回の手動実行からのクールダウン）による制限を受ける。
+  - 管理者 → 手動実行（`triggerType`: 手動）。上記の制限は受けない。
+  - スケジューラ → 全エコシステムを対象に実行（`triggerType`: スケジューラ）。取得間隔・遡る日数・最大取得件数は `VulnerabilityAutoFetchSetting` の設定に従う。
+- 取得（Fetch）はユーザー・エコシステムに依らずシステム全体で共通の処理であり、取得したデータ（`Vulnerability`）はユーザーごとに分かれず全体で共有される。
 - `GET /batches` の返却内容:
   - 一般ユーザー: 自分が手動実行したバッチ + スケジューラバッチ
   - 管理者: 全バッチ
@@ -272,19 +284,32 @@ GithubAdvisorySchema.parse()          OsvAdvisorySchema.parse()
 
 #### 予算管理
 
-Amazon Bedrock自体には、コスト（$）に対するネイティブなハード上限機能は存在しない（AWS Budgetsのアラートは請求データ由来で遅延があり、リアルタイムに呼び出しを止められない）。そのため、アプリケーション層で月間の使用量を自前管理し、呼び出し前に同期的にチェックする方式を採る。
+Amazon Bedrock自体には、コスト（$）に対するネイティブなハード上限機能は存在しない（AWS Budgetsのアラートは請求データ由来で遅延があり、リアルタイムに呼び出しを止められない）。そのため、アプリケーション層でトークン使用量を自前で集計し、呼び出し前に同期的にチェックする方式を採る。
 
-**テーブル設計:** `LlmMonthlyUsage`モデル（`year`・`month`・`inputTokens`・`outputTokens`・`costUsd`を`[year, month]`でユニーク制約、詳細は実ファイル`packages/api/prisma/schema.prisma`を参照）。
+**テーブル設計（4テーブル構成）:**
+
+| モデル | 役割 |
+|---|---|
+| `LlmModel` | 使用可能なLLMモデルのマスタ（`name`・`enabled`）。モデルは頻繁に追加・変更されるため、コード変更（enum）ではなくマスタテーブルとして持つ |
+| `AppLlmTokenUsage` | システム全体の月次×モデル別トークン使用量集計（`year`・`month`・`modelId`・`inputTokens`・`outputTokens`を`[modelId, year, month]`でユニーク制約）。呼び出し元を問わず全ての使用量を積み上げる |
+| `UserLlmTokenUsage` | ユーザー別の月次×モデル別トークン使用量集計（`userId`・`year`・`month`・`modelId`・`inputTokens`・`outputTokens`を`[userId, modelId, year, month]`でユニーク制約）。一般ユーザーの手動実行に起因する使用量のみを積み上げる |
+| `UserLlmTokenBudget` | ユーザー別の月間トークン予算上限（`userId`（`User`に1:1のFK）・`monthlyTokenBudget`）。行が存在しないユーザーは上限0扱い（＝LLM要約を利用不可）とする |
+
+いずれのテーブルもコスト（`costUsd`）は保存しない。表示・判定が必要なタイミングで「トークン数 × そのモデルの単価」を計算して算出する（単価はモデルによって異なるため、集計は`modelId`単位で行う）。
 
 **`year`/`month`を個別の`Int`型にする理由:** 月次データを`DATE`型（月初日を格納）で表現する方法も検討したが、「月初日をどう作るか」の実装がタイムゾーン依存になりやすい（ローカルタイムゾーンの`getFullYear()`/`getMonth()`を使うと、UTC変換時に日付が前後にずれ、月をまたぐタイミングで集計が混線するバグを生みやすい）。`year`/`month`を個別の`Int`型にすることで、そもそも「日」を扱わないため、この種のタイムゾーンバグが構造的に発生しない。
 
-**トークン数・コストの取得方法:** 別途トークナイザーは使用しない。BedrockのInvokeModelレスポンスに含まれる`usage.input_tokens`/`usage.output_tokens`の実測値をそのまま加算する。
+**トークン数の取得方法:** 別途トークナイザーは使用しない。BedrockのInvokeModelレスポンスに含まれる`usage.input_tokens`/`usage.output_tokens`の実測値をそのまま加算する。
 
-**更新方法:** Prismaの`upsert`＋`increment`を使い、レコードが無ければ作成・あればDB側でアトミックに加算する（並列実行数3の同時書き込みでも取りこぼしが起きないようにするため）。
+**更新方法:** Prismaの`upsert`＋`increment`を使い、レコードが無ければ作成・あればDB側でアトミックに加算する（並列実行数3の同時書き込みでも取りこぼしが起きないようにするため）。`AppLlmTokenUsage`は呼び出し元を問わず毎回更新し、`UserLlmTokenUsage`は一般ユーザーの手動実行に起因する場合のみ更新する。
+
+**予算チェックの方式（2階建て）:**
+- 全体予算: `AppLlmTokenUsage`は可視化（管理者向けの使用量表示など）のみに使い、これを理由にLLM呼び出しを止めることはしない。
+- ユーザー別予算: 一般ユーザーの手動実行に起因する要約呼び出しの場合のみ、`UserLlmTokenBudget.monthlyTokenBudget`と当月の`UserLlmTokenUsage`（全モデル合計）を比較し、超過していれば要約をスキップして強制停止する（`llmSummary`は`null`のまま保存）。管理者・スケジューラ実行はユーザー別予算チェックの対象外。
 
 **予算チェックの置き場所:** `SummaryClient`の実装（`BedrockSummaryClient`）ではなく、usecase層で`summaryClient.summarize()`を呼ぶ前にチェックする。予算管理はLLM呼び出し手段（Bedrockかどうか）とは独立した関心事であり、`SummaryClient`に混ぜると`FakeSummaryClient`にも同じロジックの重複実装が必要になるほか、「予算超過」と「呼び出し失敗」が戻り値だけで区別できなくなるため。
 
-月間予算額（`MONTHLY_LLM_BUDGET_USD`）: TODO: 具体的な金額を運用しながら決定し、環境変数で設定する。
+ユーザー別月間トークン予算（`UserLlmTokenBudget.monthlyTokenBudget`）の値をどう決定・設定するかは未決事項とする（詳細は下記「未決事項」を参照）。
 
 #### アーキテクチャ
 
@@ -364,7 +389,7 @@ Content-Type: `application/problem+json`
   "title": "Validation Error",
   "status": 422,
   "detail": "Validation failed",
-  "instance": "/users/abc123/vulnerability-configs/npm",
+  "instance": "/users/abc123/notification-channels/ch456",
   "errors": [
     { "field": "minSeverity", "message": "Must be between 1 and 10" }
   ]
@@ -581,7 +606,31 @@ packages/api/src/
 │   │   ├── entity.ts
 │   │   ├── entity.test.ts
 │   │   └── repository.ts
-│   └── vulnerability-config/
+│   ├── vulnerability-auto-fetch-setting/
+│   │   ├── entity.ts
+│   │   ├── entity.test.ts
+│   │   └── repository.ts
+│   ├── vulnerability-manual-fetch-setting/
+│   │   ├── entity.ts
+│   │   ├── entity.test.ts
+│   │   └── repository.ts
+│   ├── line-channel/
+│   │   ├── entity.ts
+│   │   ├── entity.test.ts
+│   │   └── repository.ts
+│   ├── llm-model/
+│   │   ├── entity.ts
+│   │   ├── entity.test.ts
+│   │   └── repository.ts
+│   ├── app-llm-token-usage/
+│   │   ├── entity.ts
+│   │   ├── entity.test.ts
+│   │   └── repository.ts
+│   ├── user-llm-token-usage/
+│   │   ├── entity.ts
+│   │   ├── entity.test.ts
+│   │   └── repository.ts
+│   └── user-llm-token-budget/
 │       ├── entity.ts
 │       ├── entity.test.ts
 │       └── repository.ts
@@ -602,10 +651,8 @@ packages/api/src/
 │   │   └── list-vulnerabilities.ts
 │   ├── notification/
 │   │   └── list-notifications.ts
-│   ├── notification-channel/
-│   │   └── create-notification-channel.ts
-│   └── vulnerability-config/
-│       └── upsert-vulnerability-config.ts
+│   └── notification-channel/
+│       └── create-notification-channel.ts
 │
 ├── infrastructure/
 │   ├── prisma/                                    # 技術ベース（Repository interfaceの実装）
@@ -623,10 +670,7 @@ packages/api/src/
 │   │   ├── notification/
 │   │   │   ├── repository.ts
 │   │   │   └── mapper.ts
-│   │   ├── notification-channel/
-│   │   │   ├── repository.ts
-│   │   │   └── mapper.ts
-│   │   └── vulnerability-config/
+│   │   └── notification-channel/
 │   │       ├── repository.ts
 │   │       └── mapper.ts
 │   └── clients/                                   # 技術ベース（portの実装のみ）
@@ -654,8 +698,7 @@ packages/api/src/
 │   ├── batches.test.ts
 │   ├── vulnerabilities.ts
 │   ├── notifications.ts
-│   ├── notification-channels.ts
-│   └── vulnerability-configs.ts
+│   └── notification-channels.ts
 │
 ├── middleware/
 │   ├── auth.ts
@@ -712,4 +755,5 @@ routes → usecases（usecase + ports） → domain（entity + Repository interf
 | LINE チャネル連携 | TODO: `lineUserId` の取得・登録フローを設計する |
 | スケジューラ認証 | TODO: M2M（Cognito Client Credentials フロー）の詳細をインフラ設計フェーズで設計する |
 | LLMモデルバージョン | TODO: `BEDROCK_MODEL_ID` の具体的な値を実装フェーズで決定する |
-| 月間LLM予算額 | TODO: `MONTHLY_LLM_BUDGET_USD` の具体的な金額を運用しながら決定する |
+| ユーザー別LLM月間トークン予算 | TODO: `UserLlmTokenBudget.monthlyTokenBudget` の値をどう決定・設定するか（ユーザーごとに個別設定するか、全ユーザー共通の初期値を用意するか、設定用のAPI／管理画面をどう用意するか等）を運用しながら決定する |
+| 全体LLM予算の可視化用の目安値 | TODO: `AppLlmTokenUsage` を可視化する際に比較対象とする「目安となる金額・トークン数」をどう持つか（env変数か、DBに1件だけ持つか等）を決定する。強制停止には使わない前提 |

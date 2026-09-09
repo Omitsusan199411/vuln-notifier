@@ -26,6 +26,8 @@ CI/CD パイプラインの中で自動実行する。
 
 `prisma migrate dev` を手動実行する。スキーマ変更のたびに開発者が明示的に実行し、マイグレーションファイルを生成する。
 
+ただし、本番・stg等へ一度もデプロイしていない環境に限り、積み重なったマイグレーション履歴を単一の `init` マイグレーションに squash し、`migration.sql` を直接編集してよい。デプロイ済みの環境が存在する場合、squash すると `_prisma_migrations` テーブルの適用履歴と不整合が生じるため行わない。
+
 | コマンド | 用途 |
 |---|---|
 | `prisma migrate dev` | 開発時：マイグレーションファイル生成 + ローカル DB 適用 |
@@ -53,12 +55,17 @@ CI/CD パイプラインで `prisma migrate deploy` の後に `prisma db seed` �
 |---|---|
 | `npm` | JavaScript / TypeScript |
 | `pip` | Python |
-| `cargo` | Rust |
+| `rust` | Rust |
 | `maven` | Java |
 | `rubygems` | Ruby |
 | `nuget` | .NET |
 | `go` | Go |
 | `composer` | PHP |
+| `erlang` | Erlang / Elixir |
+| `actions` | GitHub Actions |
+| `pub` | Dart |
+| `swift` | Swift |
+| `other` | 上記以外 |
 
 #### 開発用ダミーデータ
 

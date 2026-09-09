@@ -76,17 +76,27 @@ AWS Lambda（API）    Vercel（Web）
 
 **ツール:** GitHub Actions
 
-**パイプライン:**
+**現状の実装範囲（`.github/workflows/ci.yaml`）:**
 
 ```
-① テスト実行（Vitest）
-② コンテナイメージのビルド
-③ ECR へ push
-④ prisma migrate deploy（DB マイグレーション）
-⑤ ECS サービスの更新（新しいイメージでデプロイ）
+① audit（pnpm audit）
+② lint（Biome）
+③ test（Vitest。prisma migrate deploy 後にテスト実行）
+④ build
 ```
 
-**AWS 認証:** OIDC を使用。GitHub Secrets に AWS アクセスキーを保存せず、IAM ロールで一時的な認証情報を取得する。
+デプロイに関するジョブ（コンテナビルド以降）は未実装。
+
+**将来計画（未実装）:**
+
+```
+⑤ コンテナイメージのビルド
+⑥ ECR へ push
+⑦ prisma migrate deploy（DB マイグレーション）
+⑧ ECS サービスの更新（新しいイメージでデプロイ）
+```
+
+**AWS 認証（将来計画）:** OIDC を使用。GitHub Secrets に AWS アクセスキーを保存せず、IAM ロールで一時的な認証情報を取得する。
 
 ---
 
@@ -100,7 +110,7 @@ AWS Lambda（API）    Vercel（Web）
 
 #### テスト（ローカル）
 
-`docker-compose.yaml` の `api` サービスに `TEST_DATABASE_URL` を追加し、`package.json` のテストスクリプトで `DATABASE_URL` を上書きする（詳細はテスト設計参照）。
+`docker-compose.yaml` で `DATABASE_URL`（開発用 DB）と `TEST_DATABASE_URL`（テスト用 DB）を両方注入する。接続先の切り替えは `src/lib/prisma.ts` が `process.env.VITEST` の有無で判定し、Vitest 実行時のみ `TEST_DATABASE_URL` を使用する。テスト用 DB のマイグレーションリセットは `vitest.global-setup.ts` が `DATABASE_URL` を `TEST_DATABASE_URL` の値で上書きした環境で `prisma migrate reset` を実行することで行う。また、コンテナ起動時には `docker-entrypoint.sh` が開発用・テスト用の両 DB に対して `prisma migrate deploy` を実行する（詳細はテスト設計参照）。
 
 #### テスト（GitHub Actions）
 
@@ -117,4 +127,4 @@ GitHub Actions の `env` で `DATABASE_URL` を直接渡す（詳細はテスト
 | `COGNITO_CLIENT_SECRET` | Cognito アプリクライアントシークレット |
 | `COGNITO_ISSUER` | Cognito ユーザープール URL |
 | `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API トークン |
-| `API_URL` | Web から API への接続先 URL |
+| `NEXT_PUBLIC_API_URL` | Web から API への接続先 URL |

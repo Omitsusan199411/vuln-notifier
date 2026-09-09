@@ -58,7 +58,7 @@ Auth.js の Cognito プロバイダーを使い、`session: { strategy: 'jwt' }`
 
 ### APIへのトークン受け渡し
 
-Hono API には **ID トークン**を渡す。ID トークンには `cognitoSub`・`cognito:groups` が含まれており、ユーザー識別と管理者判定を同時に行える。
+Hono API には **ID トークン**を渡す。ID トークンに含まれる `cognitoSub` でユーザーを識別し、DB の `User.role` を参照して認可判定を行う。
 
 Hono RPC クライアント（`hc`）の生成時に、Auth.js のセッションから取り出した `idToken` を `Authorization: Bearer` ヘッダーとして付与する。
 
@@ -66,10 +66,12 @@ Hono RPC クライアント（`hc`）の生成時に、Auth.js のセッショ�
 
 ### 認可
 
+権限（role）の正は DB の `User` テーブルの `role` カラムとする。API は ID トークンで認証したユーザーを `cognitoSub` で DB の `User` に紐付け、その `role` カラムの値（`admin` / `general`）で認可判定を行う。
+
 | 役割 | 判定方法 |
 |---|---|
-| 一般ユーザー | 有効な Cognito ID トークンを持つ（グループなし） |
-| 管理者 | JWT の `cognito:groups` クレームに `admin` が含まれる |
+| 一般ユーザー | DB の `User.role` が `general` |
+| 管理者 | DB の `User.role` が `admin` |
 
 詳細は [API 設計](../api/design.md) の権限レベル定義を参照。
 
@@ -105,3 +107,4 @@ ID トークン漏洩     → 最大 1時間で無効 ← 許容範囲
 | LINE IdP 連携 | Cognito の LINE IdP 設定と lineUserId の取得フローは実装フェーズで設計 |
 | トークンリフレッシュ | Auth.js のリフレッシュトークン処理の詳細は実装時に確認 |
 | ローカル開発 | dev 用 Cognito ユーザープールを使用（cognito-local は不使用） |
+| role と Cognito グループの関係 | 権限の正は DB の `User.role` だが、Cognito 側にも `cognito:groups` によるグループ管理機能がある。どちらを正とするか、および両者の同期方法（手動運用／Cognito トリガーでの自動反映など）は未決定 |

@@ -46,7 +46,6 @@
 /notifications/:id                      ← 通知詳細
 
 # 認証済み（一般ユーザー・管理者共通）
-/settings/vulnerability-configs        ← 取得設定管理
 /settings/notification-channels        ← 通知チャネル管理
 
 # 管理者のみ
@@ -56,6 +55,8 @@
 /admin/batches                          ← 全バッチ一覧
 /admin/notification-channels           ← 全通知チャネル一覧
 ```
+
+**取得設定について:** 脆弱性の取得（自動/手動）はユーザー・エコシステムに依らないシステム全体の関心事であり、`/settings/vulnerability-configs`のようなユーザー向け単一ページは持たない。自動取得の間隔・lookback日数・最大取得件数、手動取得の上限値（期間・件数・実行間隔）は、いずれもユーザー単位ではなく**グローバル/管理者向け**の設定として扱う。severity・cvssScoreなどの通知しきい値は`/settings/notification-channels`（通知チャネル単位）の責務。
 
 **Next.js Route Groups によるレイアウト・認可の分離:**
 
@@ -73,6 +74,8 @@
 ### ディレクトリ構成
 
 **Bulletproof-react の考え方を踏襲して機能ごとにディレクトリを分ける**
+
+以下はディレクトリ構成パターンの例示であり、ファイル名・フック名・コンポーネント名は実際のエンティティ/フィーチャー名の変更に追従して変わる（固定の命名ではない）。
 
 ```
 packages/web/src/
@@ -96,8 +99,6 @@ packages/web/src/
 │       │   │   └── batches/
 │       │   │       └── page.tsx
 │       │   ├── settings/
-│       │   │   ├── vulnerability-configs/
-│       │   │   │   └── page.tsx
 │       │   │   └── notification-channels/
 │       │   │       └── page.tsx
 │       │   ├── vulnerabilities/
@@ -191,13 +192,11 @@ packages/web/src/
 │   │   └── index.ts
 │   ├── settings/
 │   │   ├── api/
-│   │   │   ├── useVulnerabilityConfigs.ts
-│   │   │   ├── useVulnerabilityConfigs.test.ts
-│   │   │   └── useNotificationChannels.ts
+│   │   │   ├── useNotificationChannels.ts
+│   │   │   └── useNotificationChannels.test.ts
 │   │   ├── components/
-│   │   │   ├── VulnerabilityConfigForm.tsx
-│   │   │   ├── VulnerabilityConfigForm.test.tsx
-│   │   │   └── NotificationChannelForm.tsx
+│   │   │   ├── NotificationChannelForm.tsx
+│   │   │   └── NotificationChannelForm.test.tsx
 │   │   ├── hooks/
 │   │   ├── stores/
 │   │   ├── types/

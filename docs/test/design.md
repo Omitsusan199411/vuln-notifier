@@ -39,14 +39,14 @@
 - テスト用 DB コンテナを開発用 DB と分離する（データが混ざらない疎結合）
 - `.env` ファイルは使用しない。環境変数は docker-compose / GitHub Actions で管理する
 - `docker-compose.yaml`（実ファイル参照）に開発用 DB とは別ポートの `db-test` コンテナを追加し、`api` サービスに `TEST_DATABASE_URL` を追加する
-- ルートの `package.json` のテストスクリプトで、実行時に `DATABASE_URL` を `TEST_DATABASE_URL` の値へ上書きする。コンテナ内で `pnpm test` を実行するだけでテスト用 DB に切り替わる
+- アプリ側（`src/lib/prisma.ts`）で Vitest 実行時フラグ（`process.env.VITEST`）を見て、接続先を `DATABASE_URL` から `TEST_DATABASE_URL` に切り替える。コンテナ内で `pnpm test`（Vitest）を実行するだけでテスト用 DB に切り替わる
 - GitHub Actions では `services` として同じ `db-test` イメージを起動し、`DATABASE_URL` をそのサービスに向けた値で `env` に直接渡す
 
 ##### テストデータのクリーンアップ
 
-**TRUNCATE CASCADE** を採用する。Prisma のモデル一覧（`Prisma.ModelName`）から対象テーブルを動的に組み立てて `TRUNCATE ... RESTART IDENTITY CASCADE` を発行する方針とする。こうすることで、`schema.prisma` にモデルを追加した際も対象テーブルの一覧を手動更新せずに済み、かつアプリ外のテーブル（拡張機能・手動作成テーブル等）を誤って削除しない。
+**TRUNCATE CASCADE** を採用する。`pg_tables` から `public` スキーマの全テーブルを取得し（`_prisma_migrations` のみ除外）、`TRUNCATE ... RESTART IDENTITY CASCADE` を発行する方針とする。こうすることで、`schema.prisma` にモデルを追加した際も対象テーブルの一覧を手動更新せずに済む。
 
-テスト実行前（`beforeAll`）にマイグレーションを適用し、各テスト後（`afterEach`）にクリーンアップを行う。
+テスト実行前に Vitest の `globalSetup` でマイグレーションを適用し、各テスト後（`afterEach`）にクリーンアップを行う。
 
 **TRUNCATE CASCADE を選ぶ理由：**
 - `deleteMany` の順次実行より高速（単一 SQL 文）
@@ -58,7 +58,7 @@
 `fishery` を使う。build 専用（DB に依存しない）factory と、DB への書き込み・関連付け（association）を行う factory は、ディレクトリを分ける。同じファイルに共存させると、ドメイン層のテストが build 専用 factory だけを import したつもりでも、同じファイルにある Prisma クライアントの import が一緒に読み込まれてしまうため。
 
 - `src/testing/factories/*.ts`: build 専用。`onCreate` を持たず、Prisma に依存しない。ドメイン層のテストはここだけを import する
-- `src/testing/factories/persisted/*.ts`: `onCreate` で実際に DB へ保存する。同名の build 専用 factory がある場合は、デフォルト値を重複させないよう `build()` を呼んで再利用する（例: `persisted/batch.ts` の `batchFactory` は `../batch.js` の `newBatchFactory.build()` を呼ぶ）
+- `src/testing/factories/persisted/*.ts`: `onCreate` で実際に DB へ保存する。同名の build 専用 factory がある場合は、デフォルト値を重複させないよう `build()` を呼んで再利用する（例: `persisted/batch.ts` の `batchFactory` は `../batch.js` の `newBatchPropsFactory.build()` を呼ぶ）
 
 ---
 
@@ -77,5 +77,5 @@
 
 ### カバレッジ
 
-- 目標値: **75%**（Google 推奨）
+- 目標値: **60%**（`vitest.config.ts` の `coverage.thresholds` で設定）
 - 計測ツール: Vitest 組み込みのカバレッジ機能
