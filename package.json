@@ -23,7 +23,7 @@
 		"lefthook": "^2.1.6",
 		"turbo": "^2.9.14",
 		"typescript": "catalog:",
-		"vitest": "^4.1.8"
+		"vitest": "^4.1.11"
 	},
 	"keywords": [],
 	"author": "",
