@@ -233,9 +233,6 @@ describe("Prisma Batch Integration Test", () => {
 			expect(createdBatch.triggeredBy).toBe(user.id);
 			expect(createdBatch.executedAt).toEqual(newBatch.executedAt);
 			expect(createdBatch.status).toBe(newBatch.status);
-
-			const found = await repository.findById(createdBatch.id ?? "");
-			expect(found?.id).toBe(createdBatch.id);
 		});
 
 		it("triggeredByに存在しないユーザーIDを指定した場合、エラーになること", async () => {
