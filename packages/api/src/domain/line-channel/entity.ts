@@ -24,7 +24,7 @@ export class LineChannel {
 		return this._notificationChannelId;
 	}
 
-	get lineUserId(): string | undefined {
+	get lineUserId(): string {
 		return this._lineUserId;
 	}
 
