@@ -17,9 +17,9 @@ export const buildCursorQueryOptions = (params: {
 	} = params;
 
 	return {
-		cursor: cursor ? { id: cursor } : undefined,
-		skip: cursor ? skipCursorRowCount : undefined,
-		take: limit + fetchExtraRowCount,
+		cursor: cursor ? { id: cursor } : undefined, // どのレコードを起点に取得するか
+		skip: cursor ? skipCursorRowCount : undefined, // 起点のレコード自体を結果から除いて次のレコードからを取得レコードの対象とする
+		take: limit + fetchExtraRowCount, // 次ページの有無判定分を含めて多めに取得する件数
 	};
 };
 
