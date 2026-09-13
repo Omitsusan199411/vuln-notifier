@@ -8,7 +8,7 @@ import {
 import prisma from "@/lib/prisma.js";
 import { PrismaNotificationChannelMapper } from "./mapper.js";
 
-export class PrismaNotificationChannnelRepository
+export class PrismaNotificationChannelRepository
 	implements NotificationChannelRepository
 {
 	async findById(

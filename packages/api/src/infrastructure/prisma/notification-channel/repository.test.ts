@@ -2,16 +2,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { NotificationChannel } from "@/domain/notification-channel/entity.js";
 import type { ReconstructedNotificationChannelProps } from "@/domain/notification-channel/entity.type.js";
 import { NotificationChannelType } from "@/generated/prisma/enums.js";
-import { PrismaNotificationChannnelRepository } from "@/infrastructure/prisma/notification-channel/repositoty.js";
+import { PrismaNotificationChannelRepository } from "@/infrastructure/prisma/notification-channel/repositoty.js";
 import { newNotificationChannelPropsFactory } from "@/testing/factories/notification-channel.js";
 import { notificationChannelFactory } from "@/testing/factories/persisted/notification-channel.js";
 import { userFactory } from "@/testing/factories/persisted/user.js";
 
-describe("Prisma Notification Channnel Integration Test", () => {
-	let repository: PrismaNotificationChannnelRepository;
+describe("Prisma Notification Channel Integration Test", () => {
+	let repository: PrismaNotificationChannelRepository;
 
 	beforeEach(() => {
-		repository = new PrismaNotificationChannnelRepository();
+		repository = new PrismaNotificationChannelRepository();
 	});
 
 	describe("findByIdメソッド", () => {
@@ -44,10 +44,10 @@ describe("Prisma Notification Channnel Integration Test", () => {
 			await notificationChannelFactory.createList(5);
 
 			// factoryが生成した配列の順番とDBが返す順番が一致する保証はないため、fetchList({})の実際の返却順を期待値の基準にする
-			const { notificationChannels: allNotificationChannnels } =
+			const { notificationChannels: allNotificationChannels } =
 				await repository.fetchList({});
 			const cursorIndex = 1; // cursorの対象をallNotificationChannnelの２番目の要素に指定
-			const cursor = allNotificationChannnels[cursorIndex].id;
+			const cursor = allNotificationChannels[cursorIndex].id;
 
 			const { notificationChannels: targetNotificationChannels } =
 				await repository.fetchList({
@@ -59,7 +59,7 @@ describe("Prisma Notification Channnel Integration Test", () => {
 					(notificationChannel) => notificationChannel.id,
 				),
 			).toEqual(
-				allNotificationChannnels
+				allNotificationChannels
 					.slice(cursorIndex + 1)
 					.map((notificationChannel) => notificationChannel.id),
 			);
@@ -128,7 +128,7 @@ describe("Prisma Notification Channnel Integration Test", () => {
 				notificationChannels.every(
 					(notificationChannel) => notificationChannel.type === type,
 				),
-			);
+			).toBe(true);
 		});
 
 		it("enabledで指定したnotificationChannelレコードが取得できること", async () => {
@@ -148,7 +148,7 @@ describe("Prisma Notification Channnel Integration Test", () => {
 				notificationChannels.every(
 					(notificationChannel) => notificationChannel.enabled === enabled,
 				),
-			);
+			).toBe(true);
 		});
 
 		it("sort（昇順）で指定したソート順でnotificationChannelレコードが取得できること", async () => {
