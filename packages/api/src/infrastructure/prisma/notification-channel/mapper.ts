@@ -58,4 +58,35 @@ export class PrismaNotificationChannelMapper {
 			lastProcessedAt,
 		};
 	}
+
+	// update用
+	static toUpdatePersistence(
+		notificationChannel: NotificationChannel,
+	): Prisma.NotificationChannelUpdateInput {
+		const {
+			id,
+			userId,
+			type,
+			maxNotificationLimit,
+			enabled,
+			minSeverity,
+			minCvssScore,
+			cvssScoreOrderBy,
+			notificationIntervalMinutes,
+			lastProcessedAt,
+		} = notificationChannel;
+
+		return {
+			id,
+			user: { connect: { id: userId } },
+			type,
+			maxNotificationLimit,
+			enabled,
+			minSeverity,
+			minCvssScore,
+			cvssScoreOrderBy,
+			notificationIntervalMinutes,
+			lastProcessedAt,
+		};
+	}
 }
