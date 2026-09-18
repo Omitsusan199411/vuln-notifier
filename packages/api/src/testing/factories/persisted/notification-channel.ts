@@ -4,8 +4,8 @@ import type { NewNotificationChannelProps } from "@/domain/notification-channel/
 import type { NotificationChannel as NotificationChannelRecord } from "@/generated/prisma/client.js";
 import { PrismaNotificationChannelMapper } from "@/infrastructure/prisma/notification-channel/mapper.js";
 import prisma from "@/lib/prisma.js";
-import { newNotificationChannelPropsFactory } from "../notification-channel.js";
-import { userFactory } from "./user.js";
+import { newNotificationChannelPropsFactory } from "@/testing/factories/notification-channel.js";
+import { userFactory } from "@/testing/factories/persisted/user.js";
 
 export const notificationChannelFactory = Factory.define<
 	NewNotificationChannelProps,
