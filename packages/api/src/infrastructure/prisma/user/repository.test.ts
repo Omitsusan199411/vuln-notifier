@@ -79,7 +79,9 @@ describe("Prisma User Integration Test", () => {
 
 			// idはuuid7（時系列でソート可能）なので、作成順がidの昇順と一致する
 			expect(users.map((batch) => batch.id)).toEqual(
-				createUsers.map((batch) => batch.id),
+				createUsers
+					.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+					.map((batch) => batch.id),
 			);
 		});
 
@@ -91,9 +93,10 @@ describe("Prisma User Integration Test", () => {
 
 			const { users } = await repository.fetchList({ sort: "desc" });
 
-			// idはuuid7（時系列でソート可能）なので、作成順の逆がidの降順と一致する
 			expect(users.map((batch) => batch.id)).toEqual(
-				createUsers.map((batch) => batch.id).reverse(),
+				createUsers
+					.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+					.map((batch) => batch.id),
 			);
 		});
 
