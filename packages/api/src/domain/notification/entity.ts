@@ -34,11 +34,11 @@ export class Notification {
 		return this._notifiedAt;
 	}
 
-	static create(props: NewNotificationProps) {
+	static create(props: NewNotificationProps): Notification {
 		return new Notification(props);
 	}
 
-	static reconstruct(props: ReconstructedNotificationProps) {
+	static reconstruct(props: ReconstructedNotificationProps): Notification {
 		return new Notification(props);
 	}
 }
