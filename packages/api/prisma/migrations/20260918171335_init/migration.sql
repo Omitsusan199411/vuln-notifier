@@ -246,6 +246,9 @@ CREATE INDEX "notifications_notified_at_idx" ON "notifications"("notified_at");
 CREATE INDEX "notifications_notification_channel_id_created_at_idx" ON "notifications"("notification_channel_id", "created_at");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "notifications_notification_channel_id_vulnerability_id_noti_key" ON "notifications"("notification_channel_id", "vulnerability_id", "notified_at");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "notification_channel_ecosystems_notification_channel_id_eco_key" ON "notification_channel_ecosystems"("notification_channel_id", "ecosystem_id");
 
 -- CreateIndex
