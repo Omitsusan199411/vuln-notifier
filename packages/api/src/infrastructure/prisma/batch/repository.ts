@@ -51,10 +51,10 @@ export class PrismaBatchRepository implements BatchRepository {
 
 		const fetchedBatches = await prisma.batch.findMany({
 			where: {
-				triggerType: triggerType,
-				triggeredBy: triggeredBy,
-				executedAt: executedAt,
-				status: status,
+				triggerType,
+				triggeredBy,
+				executedAt,
+				status,
 			},
 			orderBy: {
 				createdAt: sort,

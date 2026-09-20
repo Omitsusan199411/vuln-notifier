@@ -50,12 +50,12 @@ describe("Prisma Batch Integration Test", () => {
 
 		it("cursorで指定しない場合は、先頭ページのbatchレコードから取得されること", async () => {
 			const targetLimit = 10;
-			const createBatches = [];
+			const createdBatches = [];
 			for (let i = 0; i < targetLimit + 1; i++) {
-				createBatches.push(await batchFactory.create());
+				createdBatches.push(await batchFactory.create());
 			}
 
-			// createBatchesがascでpushされるので、dbから参照する側もasc（昇順）を明示する
+			// createdBatchesがascでpushされるので、dbから参照する側もasc（昇順）を明示する
 			const { batches } = await repository.fetchList({
 				limit: targetLimit,
 				sort: "asc",
@@ -63,7 +63,7 @@ describe("Prisma Batch Integration Test", () => {
 
 			expect(batches).toHaveLength(targetLimit);
 			expect(batches.map((batch) => batch.id)).toEqual(
-				createBatches.slice(0, targetLimit).map((batch) => batch.id),
+				createdBatches.slice(0, targetLimit).map((batch) => batch.id),
 			);
 		});
 
