@@ -8,13 +8,13 @@ import { notificationChannelFactory } from "@/testing/factories/persisted/notifi
 import { vulnerabilityFactory } from "@/testing/factories/persisted/vulnerability.js";
 
 describe("Prisma Notification Repository Integration Test", () => {
+	let repository: PrismaNotificationRepository;
+
+	beforeEach(() => {
+		repository = new PrismaNotificationRepository();
+	});
+
 	describe("fetchLatestByVulnerabilityIdsメソッド", () => {
-		let repository: PrismaNotificationRepository;
-
-		beforeEach(() => {
-			repository = new PrismaNotificationRepository();
-		});
-
 		it("指定したvulnerabilityIdsのうち、通知済みのものについてvulnerabilityIdごとに最新の通知1件が返ること", async () => {
 			const notificationChannelId = (await notificationChannelFactory.create())
 				.id;
@@ -211,12 +211,6 @@ describe("Prisma Notification Repository Integration Test", () => {
 	});
 
 	describe("createManyメソッド", () => {
-		let repository: PrismaNotificationRepository;
-
-		beforeEach(() => {
-			repository = new PrismaNotificationRepository();
-		});
-
 		it("notificationレコードが複数新規作成されること", async () => {
 			const newNotificationProps: NewNotificationProps[] = [];
 			const targetCount = 3;
