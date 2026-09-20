@@ -135,13 +135,14 @@ describe("Prisma User Integration Test", () => {
 				expect(lastCursor).toEqual(users.at(-1)?.id);
 			});
 
-			it("limitで指定しなかった場合、かつ該当レコード数がlimitより多い場合、デフォルト値の10件に切り詰められてbatchレコードが取得できること", async () => {
+			it("limitで指定しなかった場合、かつ該当レコード数がデフォルトlimit（10）より多い場合、デフォルト値の10件に切り詰められてbatchレコードが取得できること", async () => {
+				const defaultLimit = 10;
 				const targetCount = 11;
 				await userFactory.createList(targetCount);
 
 				const { users, lastCursor } = await repository.fetchList({});
 
-				expect(users).toHaveLength(10);
+				expect(users).toHaveLength(defaultLimit);
 				expect(lastCursor).not.toBeNull();
 				expect(lastCursor).toEqual(users.at(-1)?.id);
 			});
