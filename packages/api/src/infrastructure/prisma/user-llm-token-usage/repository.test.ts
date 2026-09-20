@@ -297,8 +297,12 @@ describe("Prisma UserLlmTokenUsage Repository Integration Test", () => {
 
 	describe("createメソッド", () => {
 		it("userLlmTokenUsageレコードが新規登録されること", async () => {
-			const newUserLlmTokenUsageProps =
-				newUserLlmTokenUsagePropsFactory.build();
+			const userId = (await userFactory.create()).id;
+			const llmModelId = (await llmModelFactory.create()).id;
+			const newUserLlmTokenUsageProps = newUserLlmTokenUsagePropsFactory.build({
+				userId,
+				modelId: llmModelId,
+			});
 			const data = UserLlmTokenUsage.create(newUserLlmTokenUsageProps);
 
 			const createdUserLlmTokenUsage = await repository.create(data);
