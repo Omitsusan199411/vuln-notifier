@@ -25,7 +25,7 @@ export const userLlmTokenBudgetFactory = Factory.define<
 			}),
 		);
 
-		return prisma.userLlmTokenBudget.create({ data });
+		return await prisma.userLlmTokenBudget.create({ data });
 	});
 
 	return newUserLlmTokenBudgetPropsFactory.build();
